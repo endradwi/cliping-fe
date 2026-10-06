@@ -1,0 +1,30 @@
+{
+  "name": "cliping-fe",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-auto": "^4.0.0",
+    "@sveltejs/adapter-static": "^3.0.8",
+    "@sveltejs/kit": "^2.16.0",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "@types/node": "^22.10.0",
+    "autoprefixer": "^10.4.20",
+    "clsx": "^2.1.1",
+    "lucide-svelte": "^0.474.0",
+    "postcss": "^8.5.1",
+    "svelte": "^5.19.0",
+    "svelte-check": "^4.1.4",
+    "tailwind-merge": "^3.0.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7",
+    "zod": "^3.24.2"
+  }
+}
