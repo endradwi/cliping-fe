@@ -20,10 +20,10 @@
 
 <form
   onsubmit={handleSubmit}
-  class="w-full max-w-2xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 bg-neutral-900/90 border border-neutral-800 rounded-2xl shadow-2xl backdrop-blur-xl transition-all focus-within:border-rose-600/80 focus-within:ring-2 focus-within:ring-rose-600/20"
+  class="w-full max-w-2xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 bg-[#2D0000]/80 border border-[#757D6F]/40 rounded-2xl shadow-2xl backdrop-blur-xl transition-all focus-within:border-[#6D0808] focus-within:ring-2 focus-within:ring-[#6D0808]/30"
 >
   <div class="flex items-center flex-1 min-w-0 px-2">
-    <div class="pl-2 pr-1 text-neutral-500">
+    <div class="pl-2 pr-1 text-[#757D6F]">
       <Search size={18} />
     </div>
     <input
@@ -31,7 +31,7 @@
       bind:value
       disabled={loading}
       placeholder="Paste YouTube URL..."
-      class="w-full bg-transparent px-2 py-2.5 text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none"
+      class="w-full bg-transparent px-2 py-2.5 text-sm text-[#EEEAD7] placeholder:text-[#757D6F] focus:outline-none"
       required
     />
   </div>

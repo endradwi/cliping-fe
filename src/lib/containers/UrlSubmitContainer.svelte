@@ -28,8 +28,8 @@
   />
 
   {#if errorMsg}
-    <div class="mt-3 px-4 py-2 bg-rose-950/80 border border-rose-800 text-rose-300 text-xs rounded-xl flex items-center gap-2">
-      <span class="font-bold">Error:</span> {errorMsg}
+    <div class="mt-3 px-4 py-2 bg-[#2D0000] border border-[#6D0808] text-[#EEEAD7] text-xs rounded-xl flex items-center gap-2">
+      <span class="font-bold text-red-400">Error:</span> {errorMsg}
     </div>
   {/if}
 </div>

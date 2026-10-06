@@ -18,11 +18,11 @@
   } = $props();
 
   const variantClasses = {
-    primary: 'bg-rose-600 hover:bg-rose-500 text-white font-medium shadow-lg shadow-rose-950/40',
-    secondary: 'bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-200 border border-indigo-800/40',
-    ghost: 'hover:bg-slate-800/60 text-slate-300',
-    outline: 'border border-slate-700/80 hover:bg-slate-800 text-slate-200',
-    danger: 'bg-red-600 hover:bg-red-500 text-white'
+    primary: 'bg-[#6D0808] hover:bg-[#870E0E] text-[#EEEAD7] font-semibold shadow-lg shadow-black/60 border border-[#870E0E]/40',
+    secondary: 'bg-[#757D6F]/20 hover:bg-[#757D6F]/35 text-[#EEEAD7] border border-[#757D6F]/40',
+    ghost: 'hover:bg-[#2D0000] text-[#A9B3A1]',
+    outline: 'border border-[#757D6F]/50 hover:bg-[#2D0000] text-[#EEEAD7]',
+    danger: 'bg-red-700 hover:bg-red-600 text-[#EEEAD7]'
   };
 
   const sizeClasses = {

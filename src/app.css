@@ -7,23 +7,23 @@
 }
 
 body {
-  background-color: #000000;
-  color: #f8fafc;
+  background-color: #150000;
+  color: #EEEAD7;
   overflow-x: hidden;
 }
 
-/* Custom scrollbar for sleek dark look */
+/* Custom scrollbar matching Color Hunt palette */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a0a0f;
+  background: #2D0000;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1f1f2e;
+  background: #757D6F;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #e11d48;
+  background: #6D0808;
 }

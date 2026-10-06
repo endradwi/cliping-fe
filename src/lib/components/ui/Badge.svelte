@@ -8,13 +8,13 @@
   } = $props();
 
   const variants = {
-    default: 'bg-slate-800/80 text-slate-300 border-slate-700/50',
-    success: 'bg-emerald-950/60 text-emerald-400 border-emerald-800/40',
-    hot: 'bg-rose-950/80 text-rose-300 border-rose-800/60 animate-pulse',
-    outline: 'border-slate-800 text-slate-400'
+    default: 'bg-[#2D0000] text-[#A9B3A1] border-[#757D6F]/40',
+    success: 'bg-[#757D6F]/25 text-[#EEEAD7] border-[#757D6F]/60',
+    hot: 'bg-[#6D0808]/40 text-[#EEEAD7] border-[#6D0808] animate-pulse',
+    outline: 'border-[#757D6F]/50 text-[#A9B3A1]'
   };
 </script>
 
-<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border {variants[variant]}">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium border {variants[variant]}">
   {@render children?.()}
 </span>
