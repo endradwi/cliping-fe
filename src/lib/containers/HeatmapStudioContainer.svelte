@@ -5,7 +5,7 @@
   import Button from '../components/ui/Button.svelte';
   import Badge from '../components/ui/Badge.svelte';
   import { triggerRenderClip } from '../services/api.client';
-  import { Sparkles, Scissors, Subtitles, Flame, MessageSquareQuote, FileText } from 'lucide-svelte';
+  import { Sparkles, Scissors, Subtitles, Flame, MessageSquareQuote, Layers, ArrowRight } from 'lucide-svelte';
 
   let currentTime = $state(0);
   let isPlaying = $state(false);
@@ -73,29 +73,65 @@
 
 {#if clipStore.analysisResult}
   <div class="w-full max-w-5xl mx-auto mt-4 sm:mt-6 flex flex-col gap-5 sm:gap-6">
-    <!-- Video Header Details -->
-    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-4 bg-[#2D0000]/70 border border-[#757D6F]/30 rounded-2xl backdrop-blur-md">
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2 mb-1">
-          <Badge variant="hot">
-            <Flame size={12} class="mr-1 text-[#EEEAD7]" />
-            <span>Telemetry Analyzed</span>
-          </Badge>
-          <span class="text-xs text-[#A9B3A1] font-mono truncate">{clipStore.analysisResult.channel}</span>
+    <!-- Video Header Details & Batch Switcher -->
+    <div class="flex flex-col gap-3 p-4 bg-[#2D0000]/70 border border-[#757D6F]/30 rounded-2xl backdrop-blur-md">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <Badge variant="hot">
+              <Flame size={12} class="mr-1 text-[#EEEAD7]" />
+              <span>Telemetry Analyzed</span>
+            </Badge>
+            <span class="text-xs text-[#A9B3A1] font-mono truncate">{clipStore.analysisResult.channel}</span>
+          </div>
+          <h2 class="text-sm sm:text-base font-bold text-[#EEEAD7] line-clamp-1">{clipStore.analysisResult.title}</h2>
         </div>
-        <h2 class="text-sm sm:text-base font-bold text-[#EEEAD7] line-clamp-1">{clipStore.analysisResult.title}</h2>
+
+        <!-- Batch Selector Tabs (Batch 1, Batch 2, Batch 3, etc.) -->
+        <div class="flex items-center gap-1.5 p-1 bg-[#150000] border border-[#757D6F]/30 rounded-xl overflow-x-auto self-stretch sm:self-auto">
+          <div class="flex items-center gap-1 px-2 text-[11px] font-mono text-[#A9B3A1]">
+            <Layers size={13} class="text-[#EEEAD7]" />
+            <span class="hidden sm:inline">BATCH:</span>
+          </div>
+          {#each Array.from({ length: clipStore.totalBatches }, (_, i) => i + 1) as b}
+            <button
+              type="button"
+              onclick={() => {
+                clipStore.setBatch(b);
+                currentTime = clipStore.selectedStart;
+              }}
+              class="px-2.5 py-1 rounded-lg text-xs font-mono transition whitespace-nowrap {clipStore.currentBatch === b ? 'bg-[#6D0808] text-[#EEEAD7] font-bold shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+            >
+              Batch {b}
+            </button>
+          {/each}
+          {#if clipStore.totalBatches > 1}
+            <button
+              type="button"
+              onclick={() => {
+                clipStore.nextBatch();
+                currentTime = clipStore.selectedStart;
+              }}
+              class="p-1 rounded-lg text-xs font-mono text-[#EEEAD7] hover:bg-[#2D0000] transition ml-1"
+              title="Jump to Next Batch"
+            >
+              <ArrowRight size={14} />
+            </button>
+          {/if}
+        </div>
       </div>
 
-      <!-- Top 3 Presets (SOP: 1 Batch = 3 Videos) -->
-      <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-        {#each clipStore.analysisResult.topClips as clip}
+      <!-- Current Batch Clips Buttons -->
+      <div class="flex items-center gap-2 pt-2 border-t border-[#757D6F]/20 overflow-x-auto pb-1 sm:pb-0">
+        <span class="text-[11px] font-mono text-[#757D6F] whitespace-nowrap">BATCH {clipStore.currentBatch} CLIPS:</span>
+        {#each clipStore.currentBatchClips as clip}
           <button
             type="button"
             onclick={() => {
               clipStore.selectClip(clip);
               currentTime = clip.start;
             }}
-            class="px-3 py-2 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5 whitespace-nowrap min-h-[40px] {clipStore.activeClipRank === clip.rank ? 'bg-[#6D0808] text-[#EEEAD7] font-bold shadow-lg shadow-black/60 scale-105 border border-[#870E0E]' : 'bg-[#150000] text-[#A9B3A1] hover:text-[#EEEAD7] border border-[#757D6F]/20'}"
+            class="px-3 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5 whitespace-nowrap min-h-[36px] {clipStore.activeClipRank === clip.rank ? 'bg-[#6D0808] text-[#EEEAD7] font-bold shadow-lg shadow-black/60 scale-105 border border-[#870E0E]' : 'bg-[#150000] text-[#A9B3A1] hover:text-[#EEEAD7] border border-[#757D6F]/20'}"
           >
             <span>Clip #{clip.rank}</span>
             <span class="text-[10px] opacity-75">({clip.score}%)</span>
@@ -123,10 +159,10 @@
       <div class="lg:col-span-7 flex flex-col gap-4 sm:gap-5 bg-[#2D0000]/60 border border-[#757D6F]/30 p-4 sm:p-6 rounded-2xl w-full">
         <h3 class="text-sm font-bold text-[#EEEAD7] flex items-center gap-2">
           <Scissors size={16} class="text-[#EEEAD7]" />
-          <span>Clip Export Controls</span>
+          <span>Clip Export Controls (Batch {clipStore.currentBatch} • Clip #{clipStore.activeClipRank || 'Custom'})</span>
         </h3>
 
-        <!-- Spoken Dialogue Transcript Box (No need to watch whole video) -->
+        <!-- Spoken Dialogue Transcript Box -->
         <div class="p-3.5 bg-[#150000] border border-[#757D6F]/35 rounded-xl">
           <div class="flex items-center justify-between mb-1.5">
             <span class="text-[11px] text-[#A9B3A1] font-mono font-semibold flex items-center gap-1.5">
@@ -213,7 +249,7 @@
       {currentTime}
       selectedStart={clipStore.selectedStart}
       selectedEnd={clipStore.selectedEnd}
-      topClips={clipStore.analysisResult.topClips}
+      topClips={clipStore.currentBatchClips}
       onSeek={(t) => currentTime = t}
     />
   </div>
