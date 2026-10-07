@@ -5,10 +5,27 @@
   import Button from '../components/ui/Button.svelte';
   import Badge from '../components/ui/Badge.svelte';
   import { triggerRenderClip } from '../services/api.client';
-  import { Sparkles, Scissors, Subtitles, Flame } from 'lucide-svelte';
+  import { Sparkles, Scissors, Subtitles, Flame, MessageSquareQuote, FileText } from 'lucide-svelte';
 
   let currentTime = $state(0);
   let isPlaying = $state(false);
+
+  // Compute live spoken dialogue transcript for the active clip range
+  let activeTranscriptLines = $derived.by(() => {
+    const all = clipStore.analysisResult?.transcript || [];
+    return all.filter(line => {
+      const lineEnd = line.start + (line.duration || 2.5);
+      return lineEnd >= clipStore.selectedStart && line.start <= clipStore.selectedEnd;
+    });
+  });
+
+  let activeTranscriptText = $derived(
+    activeTranscriptLines.map(l => l.text).join(' ').trim()
+  );
+
+  let wordCount = $derived(
+    activeTranscriptText ? activeTranscriptText.split(/\s+/).length : 0
+  );
 
   // Global Keyboard Shortcuts (Linear Style)
   function handleKeyDown(e: KeyboardEvent) {
@@ -87,9 +104,9 @@
       </div>
     </div>
 
-    <!-- Center Stage: Video Preview (9:16) & Controls -->
+    <!-- Center Stage: Video Preview & Controls -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      <!-- 9:16 Canvas Mockup Viewport -->
+      <!-- Preview Viewport Frame -->
       <div class="lg:col-span-5 flex justify-center w-full">
         <VideoPreviewCanvas
           videoId={clipStore.analysisResult.videoId}
@@ -102,12 +119,31 @@
         />
       </div>
 
-      <!-- Controls & Export Options -->
+      <!-- Controls, Spoken Dialogue & Export Options -->
       <div class="lg:col-span-7 flex flex-col gap-4 sm:gap-5 bg-[#2D0000]/60 border border-[#757D6F]/30 p-4 sm:p-6 rounded-2xl w-full">
         <h3 class="text-sm font-bold text-[#EEEAD7] flex items-center gap-2">
           <Scissors size={16} class="text-[#EEEAD7]" />
           <span>Clip Export Controls</span>
         </h3>
+
+        <!-- Spoken Dialogue Transcript Box (No need to watch whole video) -->
+        <div class="p-3.5 bg-[#150000] border border-[#757D6F]/35 rounded-xl">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] text-[#A9B3A1] font-mono font-semibold flex items-center gap-1.5">
+              <MessageSquareQuote size={15} class="text-[#EEEAD7]" />
+              SPOKEN DIALOGUE IN THIS CLIP
+            </span>
+            <span class="text-[10px] text-[#757D6F] font-mono">{wordCount} words</span>
+          </div>
+
+          <div class="max-h-24 overflow-y-auto pr-1 text-xs text-[#EEEAD7] leading-relaxed font-sans bg-[#2D0000]/40 p-2.5 rounded-lg border border-[#757D6F]/20 select-text">
+            {#if activeTranscriptText}
+              <p class="italic font-normal">"{activeTranscriptText}"</p>
+            {:else}
+              <p class="text-[#757D6F] italic">No spoken dialogue detected in this time slice (B-roll, intro, or instrumental background).</p>
+            {/if}
+          </div>
+        </div>
 
         <!-- Duration & Aspect Ratio Switcher -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -165,7 +201,7 @@
           class="w-full mt-1 min-h-[48px] text-sm sm:text-base font-bold tracking-wide"
         >
           <Sparkles size={18} />
-          <span>Render Vertical Clip (Fast 9:16)</span>
+          <span>Render Vertical Clip (Fast {clipStore.aspectRatio})</span>
         </Button>
       </div>
     </div>
