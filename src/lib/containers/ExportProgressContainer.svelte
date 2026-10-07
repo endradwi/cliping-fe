@@ -1,7 +1,7 @@
 <script lang="ts">
   import { clipStore } from '../stores/clip.svelte';
   import { subscribeToProgress } from '../services/sse.client';
-  import { Download, CheckCircle2, AlertCircle, Loader2 } from 'lucide-svelte';
+  import { Download, CheckCircle2, AlertCircle, Loader2, ExternalLink } from 'lucide-svelte';
   import Button from '../components/ui/Button.svelte';
 
   let unsubscribe: (() => void) | null = null;
@@ -43,21 +43,36 @@
           <CheckCircle2 size={28} />
         </div>
         <h3 class="text-lg font-bold text-[#EEEAD7] mb-1">Clip Rendered Successfully!</h3>
-        <p class="text-xs text-[#A9B3A1] mb-5">Uploaded to Cloudflare R2 with 7-day auto-expiry.</p>
+        <p class="text-xs text-[#A9B3A1] mb-5">High-definition 9:16 vertical video ready to save.</p>
 
-        <div class="w-full flex gap-3">
+        <div class="w-full flex flex-col gap-2.5">
+          <!-- Primary Direct Stream Download (bypasses ISP blocks on *.r2.dev) -->
           <a
-            href={clipStore.renderProgress.r2Url}
-            target="_blank"
+            href={`/api/v1/clips/${clipStore.renderProgress.id}/download`}
             download
-            class="flex-1 py-2.5 px-4 bg-[#6D0808] hover:bg-[#870E0E] text-[#EEEAD7] font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition shadow-lg border border-[#EEEAD7]/20"
+            class="w-full py-2.5 px-4 bg-[#6D0808] hover:bg-[#870E0E] text-[#EEEAD7] font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition shadow-lg border border-[#EEEAD7]/20"
           >
             <Download size={16} />
             <span>Download MP4</span>
           </a>
-          <Button variant="outline" onclick={handleClose}>
-            Close
-          </Button>
+
+          <!-- Secondary options -->
+          <div class="flex items-center gap-2 w-full">
+            {#if clipStore.renderProgress.r2Url}
+              <a
+                href={clipStore.renderProgress.r2Url}
+                target="_blank"
+                rel="noreferrer"
+                class="flex-1 py-2 px-3 bg-[#150000] hover:bg-[#2D0000] text-[#A9B3A1] hover:text-[#EEEAD7] border border-[#757D6F]/30 rounded-lg text-xs font-mono flex items-center justify-center gap-1.5 transition truncate"
+              >
+                <ExternalLink size={13} />
+                <span>R2 Mirror</span>
+              </a>
+            {/if}
+            <Button variant="outline" size="sm" class="flex-1 py-2 text-xs" onclick={handleClose}>
+              Close
+            </Button>
+          </div>
         </div>
       {:else if clipStore.renderProgress.status === 'failed'}
         <div class="w-12 h-12 rounded-full bg-red-950 border border-red-800 text-red-300 flex items-center justify-center mb-3">
