@@ -62,9 +62,15 @@
         title: clipStore.analysisResult.title
       });
       clipStore.activeJobId = res.jobId;
+      clipStore.renderProgress = {
+        id: res.jobId,
+        status: 'queued',
+        progressPercent: 10
+      };
     } catch (err: any) {
       alert(`Render error: ${err.message}`);
       clipStore.isRendering = false;
+      clipStore.renderProgress = null;
     }
   }
 </script>

@@ -17,9 +17,22 @@
     }
 
     return () => {
-      if (unsubscribe) unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
+      }
     };
   });
+
+  function handleClose() {
+    clipStore.isRendering = false;
+    clipStore.renderProgress = null;
+    clipStore.activeJobId = null;
+    if (unsubscribe) {
+      unsubscribe();
+      unsubscribe = null;
+    }
+  }
 </script>
 
 {#if clipStore.renderProgress}
@@ -42,7 +55,7 @@
             <Download size={16} />
             <span>Download MP4</span>
           </a>
-          <Button variant="outline" onclick={() => clipStore.renderProgress = null}>
+          <Button variant="outline" onclick={handleClose}>
             Close
           </Button>
         </div>
@@ -52,7 +65,7 @@
         </div>
         <h3 class="text-lg font-bold text-[#EEEAD7] mb-1">Render Failed</h3>
         <p class="text-xs text-red-300 mb-5">{clipStore.renderProgress.error || 'Unknown pipeline failure'}</p>
-        <Button variant="outline" onclick={() => clipStore.renderProgress = null}>
+        <Button variant="outline" onclick={handleClose}>
           Close
         </Button>
       {:else}
