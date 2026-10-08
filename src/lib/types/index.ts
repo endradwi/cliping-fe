@@ -12,6 +12,7 @@ export interface CandidateClip {
   duration: number;
   score: number;
   label: string;
+  category?: 'EDU' | 'CTRL' | 'INSP';
 }
 
 export interface TranscriptLine {
