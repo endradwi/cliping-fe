@@ -46,7 +46,8 @@ class ClipStudioStore {
   hookTitleTheme = $state<'yellow' | 'red' | 'neon' | 'dark'>('yellow');
   hookTitlePosY = $state<number>(8); // percentage from top (default 8%)
   
-  // Bulk Download state
+  // Bulk Download & Export state
+  exportMode = $state<'single' | 'bulk'>('single');
   selectedClipIdsForBulk = $state<string[]>([]);
   bulkDownloadProgress = $state<{ current: number; total: number; message: string } | null>(null);
 

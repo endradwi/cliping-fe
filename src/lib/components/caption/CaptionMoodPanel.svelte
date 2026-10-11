@@ -1,6 +1,6 @@
 <script lang="ts">
   import { clipStore, type SubtitleAnimation } from '../../stores/clip.svelte';
-  import { Sparkles, Crop, Film, Type, Download } from 'lucide-svelte';
+  import { Sparkles, Crop, Film, Type, Download, PackageCheck, Loader2 } from 'lucide-svelte';
 
   let {
     activeTranscriptText = '',
@@ -443,14 +443,74 @@
     </div>
   </div>
 
+  <!-- EXPORT SETTINGS: SINGLE VS PAKET BORONGAN ZIP (Direct Mode Trigger) -->
+  <div class="p-3 bg-[#010736] border border-[#22396f]/50 rounded-2xl flex flex-col gap-2 font-mono">
+    <div class="flex items-center justify-between text-[11px]">
+      <span class="text-[#8fa2cb] font-bold uppercase">MODE EXPORT HASIL:</span>
+      <span class="font-bold text-[#fcf1d0]">
+        {clipStore.exportMode === 'single' ? `SINGLE KLIP (#${clipStore.activeClipRank})` : `PAKET ZIP (${clipStore.selectedClipIdsForBulk.length} KLIP)`}
+      </span>
+    </div>
+
+    <div class="grid grid-cols-2 gap-1.5 p-1 bg-[#0d1c42] rounded-xl border border-[#22396f]/40 text-xs">
+      <button
+        type="button"
+        onclick={() => clipStore.exportMode = 'single'}
+        class="py-1.5 px-2 rounded-lg font-bold transition flex items-center justify-center gap-1.5 {clipStore.exportMode === 'single' ? 'bg-[#fcf1d0] text-[#010736] shadow-md' : 'text-[#8fa2cb] hover:text-[#fcf1d0]'}"
+      >
+        <span>🎯 Single Klip</span>
+      </button>
+
+      <button
+        type="button"
+        onclick={() => {
+          clipStore.exportMode = 'bulk';
+          if (clipStore.selectedClipIdsForBulk.length === 0) {
+            clipStore.selectAllClips();
+          }
+        }}
+        class="py-1.5 px-2 rounded-lg font-bold transition flex items-center justify-center gap-1.5 {clipStore.exportMode === 'bulk' ? 'bg-[#fcf1d0] text-[#010736] shadow-md' : 'text-[#8fa2cb] hover:text-[#fcf1d0]'}"
+      >
+        <span>📦 Paket ZIP</span>
+      </button>
+    </div>
+
+    {#if clipStore.exportMode === 'bulk'}
+      <div class="flex items-center justify-between text-[10px] text-[#8fa2cb] pt-0.5">
+        <span>{clipStore.selectedClipIdsForBulk.length} klip dicentang dari total {clipStore.analysisResult?.topClips.length || 0}</span>
+        <button
+          type="button"
+          onclick={() => {
+            if (clipStore.selectedClipIdsForBulk.length === (clipStore.analysisResult?.topClips.length || 0)) {
+              clipStore.deselectAllClips();
+            } else {
+              clipStore.selectAllClips();
+            }
+          }}
+          class="text-[#fcf1d0] hover:underline font-bold"
+        >
+          {clipStore.selectedClipIdsForBulk.length === (clipStore.analysisResult?.topClips.length || 0) ? 'Batal Semua' : 'Pilih Semua'}
+        </button>
+      </div>
+    {/if}
+  </div>
+
   <!-- BIG ACTION CTA: RENDER & DOWNLOAD -->
   <button
     type="button"
-    disabled={clipStore.isRendering}
+    disabled={clipStore.isRendering || (clipStore.exportMode === 'bulk' && clipStore.selectedClipIdsForBulk.length === 0)}
     onclick={onRender}
-    class="w-full py-3.5 px-4 rounded-xl font-bold font-mono text-sm tracking-wide flex items-center justify-center gap-2 transition shadow-xl bg-[#fcf1d0] hover:bg-[#e9dfb8] text-black active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed sticky bottom-3 z-30"
+    class="w-full py-3.5 px-4 rounded-xl font-bold font-mono text-sm tracking-wide flex items-center justify-center gap-2 transition shadow-xl bg-[#fcf1d0] hover:bg-[#e9dfb8] text-[#010736] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed sticky bottom-3 z-30"
   >
-    <Download size={17} class="text-black" />
-    <span>Render & Download Klip ({clipStore.aspectRatio} • {clipStore.layoutMode.toUpperCase()})</span>
+    {#if clipStore.isRendering}
+      <Loader2 size={17} class="animate-spin text-[#010736]" />
+      <span>{clipStore.exportMode === 'bulk' ? 'Memproses & Mengompres ZIP...' : 'Sedang merender video...'}</span>
+    {:else if clipStore.exportMode === 'bulk'}
+      <PackageCheck size={17} class="text-[#010736]" />
+      <span>Render & Download ZIP ({clipStore.selectedClipIdsForBulk.length} Klip)</span>
+    {:else}
+      <Download size={17} class="text-[#010736]" />
+      <span>Render & Download Klip #{clipStore.activeClipRank} ({clipStore.aspectRatio} • {clipStore.layoutMode.toUpperCase()})</span>
+    {/if}
   </button>
 </div>

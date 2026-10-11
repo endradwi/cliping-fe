@@ -2,15 +2,14 @@
   import { clipStore } from '../stores/clip.svelte';
   import VideoPreviewCanvas from '../components/player/VideoPreviewCanvas.svelte';
   import HeatmapCurve from '../components/timeline/HeatmapCurve.svelte';
-  import ClipCarouselTray from '../components/timeline/ClipCarouselTray.svelte';
   import CaptionMoodPanel from '../components/caption/CaptionMoodPanel.svelte';
-  import { triggerRenderClip } from '../services/api.client';
+  import { triggerRenderClip, API_BASE } from '../services/api.client';
   import type { CandidateClip } from '../types';
   import { Film, RotateCcw, CheckCircle2 } from 'lucide-svelte';
+  import JSZip from 'jszip';
 
   let currentTime = $state(0);
   let isPlaying = $state(false);
-  let leftPanelMode = $state<'clips' | 'bulk'>('clips');
 
   // Compute live spoken dialogue transcript for the active clip range
   let activeTranscriptLines = $derived.by(() => {
@@ -77,7 +76,7 @@
     return `${m.toString().padStart(2, '0')}:${remS.toString().padStart(2, '0')}`;
   }
 
-  async function handleExport() {
+  async function handleExportSingle() {
     if (!clipStore.analysisResult) return;
     clipStore.isRendering = true;
     try {
@@ -117,6 +116,95 @@
       clipStore.renderProgress = null;
     }
   }
+
+  async function handleExportBulk() {
+    const selectedIds = clipStore.selectedClipIdsForBulk;
+    if (selectedIds.length === 0) return;
+
+    const allClips = clipStore.analysisResult?.topClips || [];
+    const targetClips = allClips.filter(c => selectedIds.includes(c.id));
+    if (targetClips.length === 0) return;
+
+    clipStore.isRendering = true;
+    const zip = new JSZip();
+
+    try {
+      for (let i = 0; i < targetClips.length; i++) {
+        const clip = targetClips[i];
+        let downloadUrl = clipStore.getClipDownloadUrl(clip);
+        let jobId = clip.id;
+
+        if (!downloadUrl) {
+          const res = await triggerRenderClip({
+            url: clipStore.videoUrl,
+            start: clip.start,
+            end: clip.end,
+            aspectRatio: clipStore.aspectRatio,
+            layout: clipStore.layoutMode,
+            panOffset: clipStore.panOffset,
+            burnSubtitles: clipStore.burnSubtitles,
+            title: `${clipStore.analysisResult?.title || 'Clip'} #${clip.rank}`,
+            hookTitle: clipStore.showHookTitle ? (clip.label || clipStore.hookTitleText) : undefined,
+            hookTitleTheme: clipStore.hookTitleTheme
+          });
+          jobId = res.jobId;
+
+          if (res.r2Url && res.cached) {
+            downloadUrl = res.r2Url;
+          } else {
+            let pollAttempts = 0;
+            while (pollAttempts < 60) {
+              await new Promise(r => setTimeout(r, 2000));
+              pollAttempts++;
+              const checkRes = await fetch(`${API_BASE}/api/v1/clips/${jobId}`);
+              const checkData = await checkRes.json();
+              if (checkData.success && checkData.data?.status === 'completed') {
+                downloadUrl = checkData.data.r2Url;
+                break;
+              } else if (checkData.data?.status === 'failed') {
+                throw new Error(`Klip #${clip.rank} gagal: ${checkData.data.error}`);
+              }
+            }
+          }
+        }
+
+        const fileFetchUrl = `${API_BASE}/api/v1/clips/${jobId}/download`;
+        const blobResp = await fetch(fileFetchUrl);
+        if (!blobResp.ok) throw new Error(`Gagal download stream #${clip.rank}`);
+        const blob = await blobResp.blob();
+
+        const safeTitle = (clipStore.analysisResult?.title || 'clip').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
+        const fileName = `${safeTitle}_clip${clip.rank}_${Math.round(clip.start)}s-${Math.round(clip.end)}s.mp4`;
+        zip.file(fileName, blob);
+
+        if (downloadUrl) {
+          clipStore.markClipDownloaded(clip.start, clip.end, jobId, downloadUrl);
+        }
+      }
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const safeZipTitle = (clipStore.analysisResult?.title || 'clipping').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 35);
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.href = URL.createObjectURL(zipBlob);
+      downloadAnchor.download = `${safeZipTitle}_clips_bulk.zip`;
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      document.body.removeChild(downloadAnchor);
+      URL.revokeObjectURL(downloadAnchor.href);
+    } catch (err: any) {
+      alert(`Export Bulk ZIP error: ${err.message}`);
+    } finally {
+      clipStore.isRendering = false;
+    }
+  }
+
+  async function handleExport() {
+    if (clipStore.exportMode === 'bulk') {
+      await handleExportBulk();
+    } else {
+      await handleExportSingle();
+    }
+  }
 </script>
 
 <svelte:window onkeydown={handleKeyDown} />
@@ -153,57 +241,69 @@
       </div>
     </div>
 
-    <!-- MAIN 3-ZONE CAPCUT ARCHITECTURE (100% Height, Zero Body Scroll) -->
+    <!-- MAIN 3-ZONE CAPCUT ARCHITECTURE: Balanced 3 / 6 / 3 Proportion (Zero Body Scroll) -->
     <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 h-full overflow-hidden">
-      <!-- ZONE 1: LEFT PANEL - CLIPS DRAWER (col-span-3) -->
-      <div class="lg:col-span-3 h-full flex flex-col bg-[#0d1c42] border border-[#22396f]/50 rounded-2xl p-2.5 overflow-hidden font-mono shadow-xl">
-        <!-- Drawer Header & Tabs -->
+      <!-- ZONE 1: LEFT PANEL - UNIFIED CLIPS DRAWER (3 Cols - 1 Clean List with Checkboxes!) -->
+      <div class="lg:col-span-3 xl:col-span-3 h-full flex flex-col bg-[#0d1c42] border border-[#22396f]/50 rounded-2xl p-2.5 overflow-hidden font-mono shadow-xl">
+        <!-- Drawer Header -->
         <div class="flex-shrink-0 flex items-center justify-between pb-2 border-b border-[#22396f]/40 mb-2">
           <div class="flex items-center gap-1.5">
             <Film size={13} class="text-[#fcf1d0]" />
-            <span class="text-xs font-bold text-[#fcf1d0] uppercase">DAFTAR KLIP</span>
+            <span class="text-xs font-bold text-[#fcf1d0] uppercase">DAFTAR KLIP ({clipStore.analysisResult.topClips.length})</span>
           </div>
 
-          <div class="flex items-center gap-1 bg-[#010736] p-0.5 rounded-lg border border-[#22396f] text-[10px]">
-            <button
-              type="button"
-              onclick={() => leftPanelMode = 'clips'}
-              class="px-2 py-0.5 rounded font-bold transition {leftPanelMode === 'clips' ? 'bg-[#fcf1d0] text-[#010736]' : 'text-[#8fa2cb]'}"
-            >
-              Klip
-            </button>
-            <button
-              type="button"
-              onclick={() => leftPanelMode = 'bulk'}
-              class="px-2 py-0.5 rounded font-bold transition {leftPanelMode === 'bulk' ? 'bg-[#fcf1d0] text-[#010736]' : 'text-[#8fa2cb]'}"
-              title="Bulk Export ZIP"
-            >
-              Bulk ZIP
-            </button>
-          </div>
+          <button
+            type="button"
+            onclick={() => {
+              if (clipStore.selectedClipIdsForBulk.length === (clipStore.analysisResult?.topClips.length || 0)) {
+                clipStore.deselectAllClips();
+              } else {
+                clipStore.selectAllClips();
+              }
+            }}
+            class="px-2 py-0.5 rounded text-[10px] font-bold transition border border-[#22396f]/60 bg-[#010736] text-[#fcf1d0] hover:border-[#fcf1d0]/50"
+            title="Pilih semua klip untuk export ZIP"
+          >
+            {clipStore.selectedClipIdsForBulk.length === (clipStore.analysisResult?.topClips.length || 0) ? 'Batal' : 'Pilih Semua'}
+          </button>
         </div>
 
-        {#if leftPanelMode === 'clips'}
-          <!-- Scrollable Clip Cards List (CapCut Media Pool Style) -->
-          <div class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-            {#each clipStore.analysisResult.topClips as clip}
-              {@const isActive = clip.rank === clipStore.activeClipRank}
-              {@const isDownloaded = clipStore.isClipDownloaded(clip)}
-              <button
-                type="button"
-                onclick={() => handleSelectClip(clip)}
-                class="w-full text-left p-2.5 rounded-xl border transition-all flex flex-col gap-1.5 {isActive ? 'bg-[#22396f] border-[#fcf1d0] text-[#fcf1d0] shadow-lg ring-1 ring-[#fcf1d0]/40' : 'bg-[#010736]/80 border-[#22396f]/50 text-[#8fa2cb] hover:text-[#fcf1d0] hover:border-[#fcf1d0]/40'}"
-              >
+        <!-- Scrollable Unified Clip Cards List with Checkboxes -->
+        <div class="flex-1 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+          {#each clipStore.analysisResult.topClips as clip}
+            {@const isActive = clip.rank === clipStore.activeClipRank}
+            {@const isChecked = clipStore.selectedClipIdsForBulk.includes(clip.id)}
+            {@const isDownloaded = clipStore.isClipDownloaded(clip)}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              class="w-full text-left p-2 rounded-xl border transition-all flex items-start gap-2 cursor-pointer {isActive ? 'bg-[#22396f] border-[#fcf1d0] text-[#fcf1d0] shadow-lg ring-1 ring-[#fcf1d0]/40' : 'bg-[#010736]/80 border-[#22396f]/50 text-[#8fa2cb] hover:text-[#fcf1d0] hover:border-[#fcf1d0]/40'}"
+              onclick={() => handleSelectClip(clip)}
+            >
+              <!-- Checkbox (Toggles Bulk Export Selection) -->
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onclick={(e) => {
+                  e.stopPropagation();
+                  clipStore.toggleBulkSelect(clip.id);
+                }}
+                class="mt-1 w-3.5 h-3.5 rounded border-[#22396f] bg-[#0d1c42] accent-[#fcf1d0] cursor-pointer flex-shrink-0"
+                title="Pilih untuk export ZIP"
+              />
+
+              <!-- Card Content Body -->
+              <div class="flex-1 min-w-0 flex flex-col gap-0.5">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-1.5">
                     <span class="px-1.5 py-0.2 rounded text-[10px] font-bold {isActive ? 'bg-[#fcf1d0] text-[#010736]' : 'bg-[#22396f] text-[#fcf1d0]'}">
                       #{clip.rank}
                     </span>
-                    <span class="text-[11px] font-bold {isActive ? 'text-[#fcf1d0]' : 'text-[#fcf1d0]/80'}">
+                    <span class="text-[11px] font-bold {isActive ? 'text-[#fcf1d0]' : 'text-[#fcf1d0]/90'}">
                       {clip.score}% Skor
                     </span>
                     {#if clip.category}
-                      <span class="text-[9px] px-1 py-0.2 rounded bg-black/50 text-[#fcf1d0]">
+                      <span class="text-[8px] px-1 py-0.2 rounded bg-black/50 text-[#fcf1d0]">
                         {clip.category}
                       </span>
                     {/if}
@@ -223,29 +323,19 @@
                 </div>
 
                 {#if clip.label}
-                  <p class="text-[10px] leading-tight line-clamp-2 {isActive ? 'text-[#fcf1d0]' : 'text-[#8fa2cb]'}">
+                  <p class="text-[10px] leading-tight line-clamp-1 {isActive ? 'text-[#fcf1d0]' : 'text-[#8fa2cb]'}">
                     "{clip.label}"
                   </p>
                 {/if}
-              </button>
-            {/each}
-          </div>
-        {:else}
-          <!-- Bulk ZIP Download Manager in Left Drawer -->
-          <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-            <ClipCarouselTray
-              onSelectClip={(c) => {
-                handleSelectClip(c);
-                leftPanelMode = 'clips';
-              }}
-            />
-          </div>
-        {/if}
+              </div>
+            </div>
+          {/each}
+        </div>
       </div>
 
-      <!-- ZONE 2: CENTER PANEL - MONITOR PLAYER & TIMELINE (col-span-5) -->
-      <div class="lg:col-span-5 h-full flex flex-col items-center justify-between gap-2.5 p-2.5 bg-[#0d1c42] border border-[#22396f]/50 rounded-2xl shadow-xl overflow-hidden">
-        <!-- Video Monitor Canvas (Takes dominant height, scaled to fit) -->
+      <!-- ZONE 2: CENTER PANEL - EXPANDED DOMINANT MONITOR & TIMELINE (6 Cols - 50% Screen Width!) -->
+      <div class="lg:col-span-6 xl:col-span-6 h-full flex flex-col items-center justify-between gap-2 p-2.5 bg-[#0d1c42] border border-[#22396f]/50 rounded-2xl shadow-xl overflow-hidden">
+        <!-- Video Monitor Canvas (Spacious & Clean - Transport Controls Moved Outside!) -->
         <div class="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
           <VideoPreviewCanvas
             videoId={clipStore.analysisResult.videoId}
@@ -309,8 +399,8 @@
         </div>
       </div>
 
-      <!-- ZONE 3: RIGHT PANEL - STUDIO PROPERTIES INSPECTOR (col-span-4) -->
-      <div class="lg:col-span-4 h-full flex flex-col bg-[#0d1c42] border border-[#22396f]/50 rounded-2xl p-2.5 overflow-hidden shadow-xl">
+      <!-- ZONE 3: RIGHT PANEL - STUDIO PROPERTIES INSPECTOR (3 Cols - Dedicated Settings) -->
+      <div class="lg:col-span-3 xl:col-span-3 h-full flex flex-col bg-[#0d1c42] border border-[#22396f]/50 rounded-2xl p-2.5 overflow-hidden shadow-xl">
         <!-- Inspector Scrollable Area (Only this panel scrolls!) -->
         <div class="flex-1 overflow-y-auto pr-1.5 custom-scrollbar">
           <CaptionMoodPanel

@@ -31,18 +31,18 @@
   let videoElement = $state<HTMLVideoElement | null>(null);
   let secondaryVideoElement = $state<HTMLVideoElement | null>(null);
 
-  // Responsive frame dimensions avoiding any column overflow - Elegant Device Scale
+  // Responsive frame dimensions avoiding any column overflow - Elegant Device Scale (Spacious Widescreen Monitor)
   const frameClass = $derived.by(() => {
     switch (aspectRatio) {
       case '16:9':
-        return 'w-full max-w-[460px] aspect-[16/9] max-h-[46vh]';
+        return 'w-full max-w-[560px] aspect-[16/9] max-h-[52vh]';
       case '1:1':
-        return 'w-auto h-[44vh] max-h-[380px] aspect-square';
+        return 'w-auto h-[46vh] sm:h-[50vh] max-h-[440px] aspect-square';
       case '4:5':
-        return 'w-auto h-[48vh] max-h-[420px] aspect-[4/5]';
+        return 'w-auto h-[50vh] sm:h-[54vh] max-h-[480px] aspect-[4/5]';
       case '9:16':
       default:
-        return 'w-auto h-[48vh] max-h-[430px] aspect-[9/16]';
+        return 'w-auto h-[54vh] sm:h-[58vh] max-h-[530px] aspect-[9/16]';
     }
   });
 
@@ -374,75 +374,75 @@
         </div>
       </div>
     {/if}
+  </div>
 
-    <!-- FLOATING CAPSULE DOCK (Glassmorphism Pill Control Bar) -->
-    <div class="absolute bottom-4 inset-x-3 flex justify-center z-20 pointer-events-auto">
-      <div class="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 bg-black/85 backdrop-blur-xl border border-white/15 rounded-full shadow-2xl shadow-black/80 text-white font-mono text-xs">
-        <!-- Rewind 5s -->
-        <button
-          type="button"
-          onclick={() => onSeekRelative ? onSeekRelative(-5) : null}
-          class="p-1 text-white/60 hover:text-white transition-colors hover:scale-110 active:scale-95"
-          title="Rewind 5s (J)"
-        >
-          <RotateCcw size={14} />
-        </button>
+  <!-- DEDICATED TRANSPORT CONTROLS BAR (Placed Below Video - Never Obstructing Footage!) -->
+  <div class="flex items-center justify-center w-full mt-2">
+    <div class="flex items-center gap-1.5 sm:gap-2 px-3 py-1 bg-[#010736] border border-[#22396f]/60 rounded-full text-[#fcf1d0] font-mono text-xs shadow-lg">
+      <!-- Rewind 5s -->
+      <button
+        type="button"
+        onclick={() => onSeekRelative ? onSeekRelative(-5) : null}
+        class="p-1 text-[#8fa2cb] hover:text-[#fcf1d0] transition-colors hover:scale-110 active:scale-95"
+        title="Rewind 5s (J)"
+      >
+        <RotateCcw size={14} />
+      </button>
 
-        <!-- Primary Play/Pause Pill with Electric Lime Accent -->
-        <button
-          type="button"
-          onclick={onTogglePlay}
-          class="w-7 h-7 rounded-full bg-[#fcf1d0] text-black font-bold flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95"
-          title="Play / Pause (Space)"
-        >
-          {#if isPlaying}
-            <Pause size={14} class="fill-black" />
-          {:else}
-            <Play size={14} class="fill-black ml-0.5" />
-          {/if}
-        </button>
+      <!-- Primary Play/Pause Pill -->
+      <button
+        type="button"
+        onclick={onTogglePlay}
+        class="w-7 h-7 rounded-full bg-[#fcf1d0] text-[#010736] font-bold flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95"
+        title="Play / Pause (Space)"
+      >
+        {#if isPlaying}
+          <Pause size={14} class="fill-[#010736]" />
+        {:else}
+          <Play size={14} class="fill-[#010736] ml-0.5" />
+        {/if}
+      </button>
 
-        <!-- Forward 5s -->
-        <button
-          type="button"
-          onclick={() => onSeekRelative ? onSeekRelative(5) : null}
-          class="p-1 text-white/60 hover:text-white transition-colors hover:scale-110 active:scale-95"
-          title="Forward 5s (L)"
-        >
-          <RotateCw size={14} />
-        </button>
+      <!-- Forward 5s -->
+      <button
+        type="button"
+        onclick={() => onSeekRelative ? onSeekRelative(5) : null}
+        class="p-1 text-[#8fa2cb] hover:text-[#fcf1d0] transition-colors hover:scale-110 active:scale-95"
+        title="Forward 5s (L)"
+      >
+        <RotateCw size={14} />
+      </button>
 
-        <!-- Aspect Ratio switch toggle -->
-        <button
-          type="button"
-          onclick={() => {
-            const ratios: Array<'9:16' | '4:5' | '1:1' | '16:9'> = ['9:16', '4:5', '1:1', '16:9'];
-            const nextIdx = (ratios.indexOf(clipStore.aspectRatio as any) + 1) % ratios.length;
-            clipStore.aspectRatio = ratios[nextIdx];
-          }}
-          class="hidden sm:flex items-center gap-1 px-2 py-0.5 bg-white/10 hover:bg-white/20 rounded-md text-[10px] text-white/90 transition hover:scale-105 active:scale-95 font-bold"
-          title="Ubah Rasio Layar"
-        >
-          <Crop size={11} />
-          <span>{aspectRatio}</span>
-        </button>
+      <!-- Aspect Ratio switch toggle -->
+      <button
+        type="button"
+        onclick={() => {
+          const ratios: Array<'9:16' | '4:5' | '1:1' | '16:9'> = ['9:16', '4:5', '1:1', '16:9'];
+          const nextIdx = (ratios.indexOf(clipStore.aspectRatio as any) + 1) % ratios.length;
+          clipStore.aspectRatio = ratios[nextIdx];
+        }}
+        class="hidden sm:flex items-center gap-1 px-2 py-0.5 bg-[#0d1c42] hover:bg-[#22396f] border border-[#22396f]/50 rounded-md text-[10px] text-[#fcf1d0] transition hover:scale-105 active:scale-95 font-bold"
+        title="Ubah Rasio Layar"
+      >
+        <Crop size={11} />
+        <span>{aspectRatio}</span>
+      </button>
 
-        <!-- Subtitles Toggle Pill -->
-        <button
-          type="button"
-          onclick={onToggleSubtitles}
-          class="px-2 py-0.5 rounded-md text-[11px] font-bold transition flex items-center gap-1 {burnSubtitles ? 'bg-[#fcf1d0]/20 text-[#fcf1d0] border border-[#fcf1d0]/40' : 'bg-white/5 text-white/40'}"
-          title="Toggle Subtitle"
-        >
-          <Subtitles size={12} />
-          <span>CC</span>
-        </button>
+      <!-- Subtitles Toggle Pill -->
+      <button
+        type="button"
+        onclick={onToggleSubtitles}
+        class="px-2 py-0.5 rounded-md text-[11px] font-bold transition flex items-center gap-1 {burnSubtitles ? 'bg-[#22396f] text-[#fcf1d0] border border-[#fcf1d0]/40' : 'bg-[#010736] text-[#8fa2cb]/60'}"
+        title="Toggle Subtitle"
+      >
+        <Subtitles size={12} />
+        <span>CC</span>
+      </button>
 
-        <!-- Tabular Monospace Time Counter -->
-        <span class="text-[11px] font-mono text-white/75 px-1 tracking-tight">
-          {formatTime(currentTime)} / {formatTime(clipStore.selectedDuration)}
-        </span>
-      </div>
+      <!-- Tabular Monospace Time Counter -->
+      <span class="text-[11px] font-mono text-[#fcf1d0]/80 px-1 tracking-tight">
+        {formatTime(currentTime)} / {formatTime(clipStore.selectedDuration)}
+      </span>
     </div>
   </div>
 
