@@ -79,6 +79,8 @@
         start: clipStore.selectedStart,
         end: clipStore.selectedEnd,
         aspectRatio: clipStore.aspectRatio,
+        layout: clipStore.layoutMode,
+        panOffset: clipStore.panOffset,
         burnSubtitles: clipStore.burnSubtitles,
         title: clipStore.analysisResult.title
       });
@@ -283,26 +285,72 @@
         {:else if activeTab === 'format'}
           <div class="p-5 bg-[#200202]/80 border border-[#757D6F]/30 rounded-2xl backdrop-blur-md shadow-xl flex flex-col gap-4 text-[#EEEAD7]">
             <div class="flex items-center justify-between pb-3 border-b border-[#757D6F]/20">
-              <span class="text-xs font-mono font-bold tracking-wider uppercase">SELECT VIDEO ASPECT RATIO</span>
-              <span class="text-xs font-mono text-[#D4FF00] font-bold">{clipStore.aspectRatio} ACTIVE</span>
+              <span class="text-xs font-mono font-bold tracking-wider uppercase">PODCAST FRAMING & CANVAS FORMAT</span>
+              <span class="text-xs font-mono text-[#D4FF00] font-bold">{clipStore.aspectRatio} • {clipStore.layoutMode.toUpperCase()}</span>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {#each aspectRatios as fmt}
+            <!-- Podcast Framing Mode -->
+            <div class="flex flex-col gap-2">
+              <span class="text-[11px] font-mono text-[#A9B3A1] tracking-wide uppercase">FRAMING PRESET</span>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <button
                   type="button"
-                  onclick={() => clipStore.aspectRatio = fmt.id}
-                  class="p-4 rounded-xl text-left font-mono transition-all border flex flex-col justify-between gap-2 {clipStore.aspectRatio === fmt.id ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] shadow-xl scale-[1.02]' : 'bg-[#150000] border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7] hover:border-[#757D6F]/60'}"
+                  onclick={() => clipStore.layoutMode = 'single'}
+                  class="p-3 rounded-xl text-left font-mono transition-all border flex flex-col justify-between gap-1 {clipStore.layoutMode === 'single' ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] shadow-lg' : 'bg-[#150000] border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
                 >
                   <div class="flex items-center justify-between w-full">
-                    <span class="text-sm font-bold">{fmt.label}</span>
-                    {#if clipStore.aspectRatio === fmt.id}
-                      <Check size={16} class="text-[#D4FF00]" />
-                    {/if}
+                    <span class="text-xs font-bold">📱 Single Camera</span>
+                    {#if clipStore.layoutMode === 'single'}<Check size={14} class="text-[#D4FF00]" />{/if}
                   </div>
-                  <span class="text-xs opacity-80">{fmt.desc}</span>
+                  <span class="text-[10px] opacity-75">1 person or custom horizontal pan focus</span>
                 </button>
-              {/each}
+
+                <button
+                  type="button"
+                  onclick={() => clipStore.layoutMode = 'split'}
+                  class="p-3 rounded-xl text-left font-mono transition-all border flex flex-col justify-between gap-1 {clipStore.layoutMode === 'split' ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] shadow-lg' : 'bg-[#150000] border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+                >
+                  <div class="flex items-center justify-between w-full">
+                    <span class="text-xs font-bold">🎙️ Split-Screen</span>
+                    {#if clipStore.layoutMode === 'split'}<Check size={14} class="text-[#D4FF00]" />{/if}
+                  </div>
+                  <span class="text-[10px] opacity-75">Host top 50%, Guest bottom 50%</span>
+                </button>
+
+                <button
+                  type="button"
+                  onclick={() => clipStore.layoutMode = 'fit-blur'}
+                  class="p-3 rounded-xl text-left font-mono transition-all border flex flex-col justify-between gap-1 {clipStore.layoutMode === 'fit-blur' ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] shadow-lg' : 'bg-[#150000] border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+                >
+                  <div class="flex items-center justify-between w-full">
+                    <span class="text-xs font-bold">🌫️ Fit Blur</span>
+                    {#if clipStore.layoutMode === 'fit-blur'}<Check size={14} class="text-[#D4FF00]" />{/if}
+                  </div>
+                  <span class="text-[10px] opacity-75">Full video with ambient background blur</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Aspect Ratio Grid -->
+            <div class="flex flex-col gap-2 pt-2 border-t border-white/5">
+              <span class="text-[11px] font-mono text-[#A9B3A1] tracking-wide uppercase">ASPECT RATIO</span>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {#each aspectRatios as fmt}
+                  <button
+                    type="button"
+                    onclick={() => clipStore.aspectRatio = fmt.id}
+                    class="p-3 rounded-xl text-left font-mono transition-all border flex flex-col justify-between gap-1 {clipStore.aspectRatio === fmt.id ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] shadow-lg scale-[1.02]' : 'bg-[#150000] border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+                  >
+                    <div class="flex items-center justify-between w-full">
+                      <span class="text-xs font-bold">{fmt.label}</span>
+                      {#if clipStore.aspectRatio === fmt.id}
+                        <Check size={14} class="text-[#D4FF00]" />
+                      {/if}
+                    </div>
+                    <span class="text-[10px] opacity-75 truncate">{fmt.desc}</span>
+                  </button>
+                {/each}
+              </div>
             </div>
 
             <button
@@ -311,7 +359,7 @@
               onclick={handleExport}
               class="w-full mt-2 py-3 px-4 rounded-xl font-bold font-mono text-sm tracking-wide flex items-center justify-center gap-2 transition shadow-xl bg-[#D4FF00] hover:bg-[#c7f000] text-black active:scale-[0.99] disabled:opacity-50"
             >
-              <span>⬇ Render Clip ({clipStore.aspectRatio})</span>
+              <span>⬇ Render Clip ({clipStore.aspectRatio} • {clipStore.layoutMode.toUpperCase()})</span>
             </button>
           </div>
         {/if}

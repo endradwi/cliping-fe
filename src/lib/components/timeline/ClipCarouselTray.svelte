@@ -52,6 +52,8 @@
             start: clip.start,
             end: clip.end,
             aspectRatio: clipStore.aspectRatio,
+            layout: clipStore.layoutMode,
+            panOffset: clipStore.panOffset,
             burnSubtitles: clipStore.burnSubtitles,
             title: `${clipStore.analysisResult?.title || 'Clip'} #${clip.rank}`
           });

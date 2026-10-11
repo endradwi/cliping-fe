@@ -137,6 +137,8 @@ export async function triggerRenderClip(payload: {
   start: number;
   end: number;
   aspectRatio: string;
+  layout?: 'single' | 'split' | 'fit-blur';
+  panOffset?: number;
   burnSubtitles: boolean;
   title?: string;
 }): Promise<{ jobId: string; status?: string; r2Url?: string; cached?: boolean }> {

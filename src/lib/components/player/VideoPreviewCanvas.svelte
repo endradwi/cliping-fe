@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Play, Pause, RotateCcw, RotateCw, Subtitles, Crop } from 'lucide-svelte';
+  import { Play, Pause, RotateCcw, RotateCw, Subtitles, Crop, Film } from 'lucide-svelte';
   import { clipStore } from '../../stores/clip.svelte';
 
   let {
@@ -29,6 +29,7 @@
   } = $props();
 
   let videoElement = $state<HTMLVideoElement | null>(null);
+  let secondaryVideoElement = $state<HTMLVideoElement | null>(null);
 
   // Responsive frame dimensions avoiding any column overflow - Elegant Device Scale
   const frameClass = $derived.by(() => {
@@ -67,6 +68,11 @@
         videoElement.currentTime = currentTime;
       }
     }
+    if (secondaryVideoElement && clipStore.analysisResult?.directVideoUrl) {
+      if (Math.abs(secondaryVideoElement.currentTime - currentTime) > 0.8) {
+        secondaryVideoElement.currentTime = currentTime;
+      }
+    }
   });
 
   // Real-time Playback Loop & Time Tracking
@@ -79,6 +85,9 @@
         if (videoElement.paused) {
           videoElement.play().catch(() => {});
         }
+        if (secondaryVideoElement && secondaryVideoElement.paused) {
+          secondaryVideoElement.play().catch(() => {});
+        }
 
         const tick = () => {
           if (!videoElement) return;
@@ -88,6 +97,7 @@
 
           if (t >= endBoundary) {
             videoElement.currentTime = startBoundary;
+            if (secondaryVideoElement) secondaryVideoElement.currentTime = startBoundary;
             onTimeUpdate?.(startBoundary);
           } else {
             onTimeUpdate?.(t);
@@ -110,6 +120,9 @@
     } else {
       if (videoElement && !videoElement.paused) {
         videoElement.pause();
+      }
+      if (secondaryVideoElement && !secondaryVideoElement.paused) {
+        secondaryVideoElement.pause();
       }
     }
 
@@ -180,23 +193,104 @@
   <!-- Dynamic Phone / Desktop Frame -->
   <div class="relative {frameClass} bg-[#0c0c0e] rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl flex items-center justify-center group transition-all">
     {#if clipStore.analysisResult?.directVideoUrl}
-      <!-- HTML5 Direct Video Player for Uploaded MP4/MOV -->
-      <video
-        bind:this={videoElement}
-        src={clipStore.analysisResult.directVideoUrl}
-        class="w-full h-full object-cover pointer-events-none"
-        playsinline
-        muted={false}
-      ></video>
+      {#if clipStore.layoutMode === 'split'}
+        <!-- Podcast Stacked Split-Screen (Top: Host 15%, Bottom: Guest 85%) -->
+        <div class="w-full h-full flex flex-col overflow-hidden">
+          <div class="h-1/2 w-full overflow-hidden relative border-b-2 border-white/20">
+            <video
+              bind:this={videoElement}
+              src={clipStore.analysisResult.directVideoUrl}
+              class="w-full h-full object-cover pointer-events-none"
+              style="object-position: 15% center;"
+              playsinline
+              muted={false}
+            ></video>
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-[#D4FF00]/40 text-[9px] font-mono font-bold text-[#D4FF00] shadow">
+              HOST (L)
+            </span>
+          </div>
+
+          <div class="h-1/2 w-full overflow-hidden relative">
+            <video
+              bind:this={secondaryVideoElement}
+              src={clipStore.analysisResult.directVideoUrl}
+              class="w-full h-full object-cover pointer-events-none"
+              style="object-position: 85% center;"
+              playsinline
+              muted={true}
+            ></video>
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-white/20 text-[9px] font-mono font-bold text-white/90 shadow">
+              GUEST (R)
+            </span>
+          </div>
+        </div>
+      {:else if clipStore.layoutMode === 'fit-blur'}
+        <!-- Ambient Blurred Background + Sharp Centered Video -->
+        <div class="w-full h-full relative overflow-hidden flex items-center justify-center bg-black">
+          <video
+            bind:this={secondaryVideoElement}
+            src={clipStore.analysisResult.directVideoUrl}
+            class="absolute inset-0 w-full h-full object-cover filter blur-xl scale-125 opacity-50 pointer-events-none"
+            playsinline
+            muted={true}
+          ></video>
+          <video
+            bind:this={videoElement}
+            src={clipStore.analysisResult.directVideoUrl}
+            class="relative max-w-full max-h-full object-contain pointer-events-none z-1 shadow-2xl rounded-lg"
+            playsinline
+            muted={false}
+          ></video>
+        </div>
+      {:else}
+        <!-- Single Focus with Interactive Camera Pan -->
+        <video
+          bind:this={videoElement}
+          src={clipStore.analysisResult.directVideoUrl}
+          class="w-full h-full object-cover pointer-events-none transition-all duration-150"
+          style="object-position: {clipStore.panOffset * 100}% center;"
+          playsinline
+          muted={false}
+        ></video>
+      {/if}
     {:else if videoId}
-      <!-- YouTube Embedded Preview -->
-      <iframe
-        id="preview-iframe"
-        src="https://www.youtube-nocookie.com/embed/{videoId}?start={Math.floor(currentTime)}&autoplay={isPlaying ? 1 : 0}&controls=0&modestbranding=1&rel=0"
-        title="YouTube Preview"
-        class={iframeClass}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      ></iframe>
+      {#if clipStore.layoutMode === 'split'}
+        <div class="w-full h-full flex flex-col overflow-hidden">
+          <div class="h-1/2 w-full overflow-hidden relative border-b-2 border-white/20 flex items-center justify-center">
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/{videoId}?start={Math.floor(currentTime)}&autoplay={isPlaying ? 1 : 0}&controls=0&modestbranding=1&rel=0"
+              title="YouTube Preview Host"
+              class="w-[750px] h-[400px] max-w-none pointer-events-none scale-125 object-cover"
+              style="transform: scale(1.2) translateX(25%);"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            ></iframe>
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-[#D4FF00]/40 text-[9px] font-mono font-bold text-[#D4FF00]">
+              HOST (L)
+            </span>
+          </div>
+          <div class="h-1/2 w-full overflow-hidden relative flex items-center justify-center">
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/{videoId}?start={Math.floor(currentTime)}&autoplay={isPlaying ? 1 : 0}&controls=0&modestbranding=1&rel=0"
+              title="YouTube Preview Guest"
+              class="w-[750px] h-[400px] max-w-none pointer-events-none scale-125 object-cover"
+              style="transform: scale(1.2) translateX(-25%);"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            ></iframe>
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-white/20 text-[9px] font-mono font-bold text-white/90">
+              GUEST (R)
+            </span>
+          </div>
+        </div>
+      {:else}
+        <iframe
+          id="preview-iframe"
+          src="https://www.youtube-nocookie.com/embed/{videoId}?start={Math.floor(currentTime)}&autoplay={isPlaying ? 1 : 0}&controls=0&modestbranding=1&rel=0"
+          title="YouTube Preview"
+          class={iframeClass}
+          style="transform: scale(1.25) translateX({(0.5 - clipStore.panOffset) * 35}%);"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        ></iframe>
+      {/if}
     {:else}
       <div class="text-[#757D6F] text-sm font-mono text-center p-4">
         No video loaded
@@ -304,8 +398,98 @@
     </div>
   </div>
 
+  <!-- FRAMING & PODCAST LAYOUT CONTROLLER -->
+  <div class="w-full flex flex-col gap-2 p-2.5 bg-[#150000] border border-[#757D6F]/30 rounded-xl font-mono text-xs shadow-md mt-2">
+    <div class="flex items-center justify-between">
+      <span class="text-[10px] text-[#A9B3A1] font-bold flex items-center gap-1">
+        <Film size={12} class="text-[#D4FF00]" />
+        <span>PODCAST FRAMING & LAYOUT:</span>
+      </span>
+      <span class="text-[10px] text-[#D4FF00] font-bold uppercase">
+        {clipStore.layoutMode === 'split' ? 'SPLIT (50/50)' : (clipStore.layoutMode === 'fit-blur' ? 'FIT BLUR' : 'SINGLE CAMERA')}
+      </span>
+    </div>
+
+    <!-- 3 Quick Layout Tabs -->
+    <div class="grid grid-cols-3 gap-1.5 p-1 bg-[#200202] rounded-lg border border-[#757D6F]/25 text-[11px]">
+      <button
+        type="button"
+        onclick={() => clipStore.layoutMode = 'single'}
+        class="py-1 px-2 rounded-md font-bold transition flex items-center justify-center gap-1 {clipStore.layoutMode === 'single' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-white'}"
+      >
+        <span>Single</span>
+      </button>
+
+      <button
+        type="button"
+        onclick={() => clipStore.layoutMode = 'split'}
+        class="py-1 px-2 rounded-md font-bold transition flex items-center justify-center gap-1 {clipStore.layoutMode === 'split' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-white'}"
+        title="Stack Host on top & Guest on bottom"
+      >
+        <span>Split 50/50</span>
+      </button>
+
+      <button
+        type="button"
+        onclick={() => clipStore.layoutMode = 'fit-blur'}
+        class="py-1 px-2 rounded-md font-bold transition flex items-center justify-center gap-1 {clipStore.layoutMode === 'fit-blur' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-white'}"
+        title="Full video with blurred background"
+      >
+        <span>Fit Blur</span>
+      </button>
+    </div>
+
+    <!-- Interactive Pan Slider & Presets when on Single Mode -->
+    {#if clipStore.layoutMode === 'single'}
+      <div class="flex flex-col gap-1.5 pt-1 border-t border-white/5">
+        <div class="flex items-center justify-between text-[10px] text-[#A9B3A1]">
+          <span>CAMERA FOCUS / PAN:</span>
+          <div class="flex items-center gap-1">
+            <button
+              type="button"
+              onclick={() => clipStore.panOffset = 0.15}
+              class="px-1.5 py-0.5 rounded bg-[#2D0000] hover:bg-[#3D0404] text-[10px] font-bold transition border border-[#757D6F]/30 {Math.abs(clipStore.panOffset - 0.15) < 0.05 ? 'border-[#D4FF00] text-[#D4FF00]' : 'text-[#A9B3A1]'}"
+            >
+              Host
+            </button>
+            <button
+              type="button"
+              onclick={() => clipStore.panOffset = 0.5}
+              class="px-1.5 py-0.5 rounded bg-[#2D0000] hover:bg-[#3D0404] text-[10px] font-bold transition border border-[#757D6F]/30 {Math.abs(clipStore.panOffset - 0.5) < 0.05 ? 'border-[#D4FF00] text-[#D4FF00]' : 'text-[#A9B3A1]'}"
+            >
+              Center
+            </button>
+            <button
+              type="button"
+              onclick={() => clipStore.panOffset = 0.85}
+              class="px-1.5 py-0.5 rounded bg-[#2D0000] hover:bg-[#3D0404] text-[10px] font-bold transition border border-[#757D6F]/30 {Math.abs(clipStore.panOffset - 0.85) < 0.05 ? 'border-[#D4FF00] text-[#D4FF00]' : 'text-[#A9B3A1]'}"
+            >
+              Guest
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-[9px] text-[#757D6F]">L</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            bind:value={clipStore.panOffset}
+            class="accent-[#D4FF00] h-1.5 w-full bg-[#2D0000] rounded-lg cursor-pointer"
+          />
+          <span class="text-[9px] text-[#757D6F]">R</span>
+          <span class="text-[10px] text-[#D4FF00] font-bold w-9 text-right font-mono">
+            {Math.round(clipStore.panOffset * 100)}%
+          </span>
+        </div>
+      </div>
+    {/if}
+  </div>
+
   <!-- Keyboard Shortcuts Cheat-Sheet -->
-  <div class="flex items-center gap-2 mt-3 text-[11px] font-mono text-[#757D6F] flex-wrap justify-center">
+  <div class="flex items-center gap-2 mt-2 text-[10px] font-mono text-[#757D6F] flex-wrap justify-center">
     <span class="px-1.5 py-0.5 bg-[#2D0000] border border-[#757D6F]/30 rounded text-[#EEEAD7]">Space</span>
     <span>Play</span>
     <span>•</span>
