@@ -1,9 +1,7 @@
 <script lang="ts">
   import '../app.css';
-  import { settingsStore } from '$lib/stores/settings.svelte';
-  import SettingsModalContainer from '$lib/containers/SettingsModalContainer.svelte';
   import ExportProgressContainer from '$lib/containers/ExportProgressContainer.svelte';
-  import { Settings, Clapperboard, Github } from 'lucide-svelte';
+  import { Clapperboard, Github, Sparkles } from 'lucide-svelte';
 
   let { children } = $props();
 </script>
@@ -25,20 +23,18 @@
 
       <!-- Actions -->
       <div class="flex items-center gap-3">
-        <button
-          type="button"
-          onclick={() => settingsStore.toggle()}
-          class="p-2 rounded-lg bg-[#2D0000] border border-[#757D6F]/40 text-[#A9B3A1] hover:text-[#EEEAD7] hover:border-[#EEEAD7]/40 transition"
-          title="AI & Storage Settings"
-        >
-          <Settings size={18} />
-        </button>
+        <!-- Human-Friendly System Status Badge -->
+        <div class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#150000] border border-[#757D6F]/30 text-[11px] font-mono text-[#A9B3A1]">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#D4FF00] animate-pulse"></span>
+          <span class="text-[#EEEAD7] font-semibold">Cloud Engine Active</span>
+        </div>
 
         <a
           href="https://github.com/endradwi"
           target="_blank"
           rel="noreferrer"
           class="p-2 rounded-lg bg-[#2D0000] border border-[#757D6F]/40 text-[#A9B3A1] hover:text-[#EEEAD7] hover:border-[#EEEAD7]/40 transition"
+          title="GitHub Repository"
         >
           <Github size={18} />
         </a>
@@ -52,6 +48,5 @@
   </main>
 
   <!-- Modals -->
-  <SettingsModalContainer />
   <ExportProgressContainer />
 </div>
