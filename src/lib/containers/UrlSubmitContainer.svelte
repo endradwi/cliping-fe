@@ -73,7 +73,8 @@
         publicUrl = fallbackRes.publicUrl;
       }
 
-      // Step 3: Trigger server-side stream probe + Groq Whisper hook analysis
+      // Step 3: Upload complete -> Transition immediately to AI Analysis stage
+      clipStore.isUploading = false;
       clipStore.isAnalyzing = true;
       const cleanTitle = file.name.replace(/\.[^/.]+$/, '');
       const data = await analyzeUploadedVideo(publicUrl, cleanTitle, file.name);
