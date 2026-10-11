@@ -1,0 +1,21 @@
+   name: Frontend CI
+
+   on:
+     push:
+       branches: [main]
+     pull_request:
+       branches: [main]
+
+   jobs:
+     check-and-build:
+       name: SvelteKit Check & Static Build
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v4
+         - uses: oven-sh/setup-bun@v2
+           with:
+             bun-version: latest
+         - run: bun install --frozen-lockfile || bun install
+         - run: bun run check
+         - run: bun run build
+   
