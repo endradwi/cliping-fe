@@ -6,11 +6,11 @@
   import CaptionMoodPanel from '../components/caption/CaptionMoodPanel.svelte';
   import { triggerRenderClip } from '../services/api.client';
   import type { CandidateClip } from '../types';
-  import { Film, SlidersHorizontal, Flame, RotateCcw } from 'lucide-svelte';
+  import { Film, Flame, RotateCcw, PackageCheck, CheckCircle2, Sliders } from 'lucide-svelte';
 
   let currentTime = $state(0);
   let isPlaying = $state(false);
-  let activeTab = $state<'editor' | 'gallery'>('editor');
+  let leftPanelMode = $state<'clips' | 'bulk'>('clips');
 
   // Compute live spoken dialogue transcript for the active clip range
   let activeTranscriptLines = $derived.by(() => {
@@ -70,6 +70,13 @@
     currentTime = newEnd;
   }
 
+  function formatTime(sec: number): string {
+    const s = Math.floor(sec);
+    const m = Math.floor(s / 60);
+    const remS = s % 60;
+    return `${m.toString().padStart(2, '0')}:${remS.toString().padStart(2, '0')}`;
+  }
+
   async function handleExport() {
     if (!clipStore.analysisResult) return;
     clipStore.isRendering = true;
@@ -116,161 +123,202 @@
 
 {#if clipStore.analysisResult}
   <div class="w-full h-full flex flex-col gap-2 overflow-hidden">
-    <!-- Top Minimalist Studio Header & Clip Switcher Strip (Zero Window Scroll) -->
-    <div class="flex-shrink-0 flex flex-col gap-1.5 p-2.5 bg-[#200202]/70 border border-[#757D6F]/25 rounded-2xl backdrop-blur-md font-mono text-xs shadow-md">
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2 min-w-0 flex-1">
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#150000] border border-[#D4FF00]/40 text-[#D4FF00] font-bold text-[10px]">
-            <span class="w-1.5 h-1.5 rounded-full bg-[#D4FF00]"></span>
-            <span>READY</span>
-          </span>
-          <span class="text-[#EEEAD7] font-bold truncate max-w-md">{clipStore.analysisResult.title}</span>
-          <button
-            type="button"
-            onclick={() => clipStore.reset()}
-            class="text-[10px] text-[#A9B3A1] hover:text-[#EEEAD7] underline ml-2 flex items-center gap-1"
-            title="Muat video lain"
-          >
-            <RotateCcw size={11} />
-            <span>Ganti Video</span>
-          </button>
-        </div>
-
-        <!-- Studio Mode Selector -->
-        <div class="flex items-center gap-1 p-0.5 bg-[#150000] border border-[#757D6F]/25 rounded-xl">
-          <button
-            type="button"
-            onclick={() => activeTab = 'editor'}
-            class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {activeTab === 'editor' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
-          >
-            <SlidersHorizontal size={12} />
-            <span>Editor Studio</span>
-          </button>
-          <button
-            type="button"
-            onclick={() => activeTab = 'gallery'}
-            class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {activeTab === 'gallery' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
-          >
-            <Film size={12} />
-            <span>Semua Klip ({clipStore.analysisResult.topClips.length})</span>
-          </button>
-        </div>
+    <!-- Top Studio Header (Fixed Height, Compact) -->
+    <div class="flex-shrink-0 flex items-center justify-between gap-3 px-3 py-1.5 bg-[#200202]/80 border border-[#757D6F]/25 rounded-xl backdrop-blur-md font-mono text-xs shadow-md">
+      <div class="flex items-center gap-2 min-w-0 flex-1">
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#150000] border border-[#D4FF00]/40 text-[#D4FF00] font-bold text-[10px]">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#D4FF00]"></span>
+          <span>READY</span>
+        </span>
+        <span class="text-[#EEEAD7] font-bold truncate max-w-xl">{clipStore.analysisResult.title}</span>
+        <button
+          type="button"
+          onclick={() => clipStore.reset()}
+          class="text-[10px] text-[#A9B3A1] hover:text-[#EEEAD7] underline ml-2 flex items-center gap-1"
+          title="Muat video lain"
+        >
+          <RotateCcw size={11} />
+          <span>Ganti Video</span>
+        </button>
       </div>
 
-      <!-- Quick One-Click Clip Selector Strip (SOCL Visuals Style) -->
-      <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-1 border-t border-[#757D6F]/15">
-        <span class="text-[10px] text-[#A9B3A1] font-bold flex-shrink-0 flex items-center gap-1">
-          <Flame size={12} class="text-[#D4FF00]" />
-          <span>PILIH KLIP:</span>
+      <!-- Quick Status Info -->
+      <div class="flex items-center gap-2 text-[10px] text-[#A9B3A1]">
+        <span class="px-2 py-0.5 rounded bg-[#150000] border border-[#757D6F]/25 text-[#D4FF00] font-bold">
+          {clipStore.analysisResult.topClips.length} Momen Dideteksi
         </span>
-        {#each clipStore.analysisResult.topClips as clip}
-          {@const isActive = clip.rank === clipStore.activeClipRank}
-          <button
-            type="button"
-            onclick={() => handleSelectClip(clip)}
-            class="px-2 py-0.5 rounded-lg text-[10px] font-bold flex-shrink-0 transition border flex items-center gap-1 {isActive ? 'bg-[#D4FF00] text-black border-[#D4FF00] shadow-md scale-105' : 'bg-[#150000] text-[#A9B3A1] hover:text-[#EEEAD7] border-[#757D6F]/30 hover:border-[#757D6F]/60'}"
-          >
-            <span>#{clip.rank}</span>
-            <span class="opacity-80">({clip.score})</span>
-            {#if clip.category}
-              <span class="text-[8px] px-1 py-0.2 rounded {isActive ? 'bg-black text-[#D4FF00]' : 'bg-[#2D0000] text-white/80'} font-mono">
-                {clip.category}
-              </span>
-            {/if}
-          </button>
-        {/each}
+        <span class="px-2 py-0.5 rounded bg-[#150000] border border-[#757D6F]/25 text-[#EEEAD7]">
+          Durasi: {formatTime(clipStore.analysisResult.duration)}
+        </span>
       </div>
     </div>
 
-    {#if activeTab === 'editor'}
-      <!-- MAIN TWO-COLUMN STUDIO WORKSPACE (Strict Viewport Boundary, Zero Body Scroll) -->
-      <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 h-full overflow-hidden">
-        <!-- LEFT COLUMN: Stage (Canvas & Timeline) -->
-        <div class="lg:col-span-5 xl:col-span-5 h-full flex flex-col items-center justify-between gap-2 p-2.5 bg-[#200202]/80 border border-[#757D6F]/25 rounded-2xl shadow-xl overflow-hidden">
-          <!-- Video Preview Canvas (Dynamically scaled within available stage height) -->
-          <div class="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
-            <VideoPreviewCanvas
-              videoId={clipStore.analysisResult.videoId}
-              {currentTime}
-              {isPlaying}
-              burnSubtitles={clipStore.burnSubtitles}
-              aspectRatio={clipStore.aspectRatio}
-              clipStart={clipStore.selectedStart}
-              clipEnd={clipStore.selectedEnd}
-              onTogglePlay={() => isPlaying = !isPlaying}
-              onToggleSubtitles={() => clipStore.burnSubtitles = !clipStore.burnSubtitles}
-              onSeekRelative={handleSeekRelative}
-              onTimeUpdate={(t) => currentTime = t}
-            />
+    <!-- MAIN 3-ZONE CAPCUT ARCHITECTURE (100% Height, Zero Body Scroll) -->
+    <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 h-full overflow-hidden">
+      <!-- ZONE 1: LEFT PANEL - CLIPS DRAWER (col-span-3) -->
+      <div class="lg:col-span-3 h-full flex flex-col bg-[#200202]/70 border border-[#757D6F]/25 rounded-2xl p-2.5 overflow-hidden font-mono shadow-xl">
+        <!-- Drawer Header & Tabs -->
+        <div class="flex-shrink-0 flex items-center justify-between pb-2 border-b border-[#757D6F]/20 mb-2">
+          <div class="flex items-center gap-1.5">
+            <Film size={13} class="text-[#D4FF00]" />
+            <span class="text-xs font-bold text-[#EEEAD7] uppercase">DAFTAR KLIP</span>
           </div>
 
-          <!-- Precision Trimmer Bar -->
-          <div class="flex-shrink-0 w-full flex flex-col gap-1 p-2 bg-[#150000] border border-[#757D6F]/25 rounded-xl font-mono text-[10px]">
-            <div class="flex items-center justify-between text-[#A9B3A1]">
-              <div class="flex items-center gap-1.5">
-                <span class="text-[#757D6F]">RENTANG:</span>
-                <span class="text-[#D4FF00] font-bold">{clipStore.selectedStart.toFixed(1)}s</span>
-                <span>➔</span>
-                <span class="text-[#D4FF00] font-bold">{clipStore.selectedEnd.toFixed(1)}s</span>
-              </div>
-              <span class="px-1.5 py-0.2 rounded bg-[#2D0000] text-[#EEEAD7] font-bold border border-[#757D6F]/30 text-[9px]">
-                {clipStore.selectedDuration.toFixed(1)}s DURASI
-              </span>
-            </div>
-
-            <!-- Micro Trim Adjusters -->
-            <div class="grid grid-cols-2 gap-1.5 text-[10px]">
-              <div class="flex items-center justify-between px-2 py-0.5 bg-[#200202] rounded-lg border border-[#757D6F]/20">
-                <span class="text-[#757D6F]">START</span>
-                <div class="flex gap-1">
-                  <button type="button" onclick={() => adjustInPoint(-1)} class="px-1.5 py-0.2 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
-                  <button type="button" onclick={() => adjustInPoint(1)} class="px-1.5 py-0.2 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
-                </div>
-              </div>
-              <div class="flex items-center justify-between px-2 py-0.5 bg-[#200202] rounded-lg border border-[#757D6F]/20">
-                <span class="text-[#757D6F]">END</span>
-                <div class="flex gap-1">
-                  <button type="button" onclick={() => adjustOutPoint(-1)} class="px-1.5 py-0.2 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
-                  <button type="button" onclick={() => adjustOutPoint(1)} class="px-1.5 py-0.2 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Heatmap Timeline -->
-          <div class="flex-shrink-0 w-full">
-            <HeatmapCurve
-              points={clipStore.analysisResult.heatmapPoints}
-              duration={clipStore.analysisResult.duration}
-              {currentTime}
-              selectedStart={clipStore.selectedStart}
-              selectedEnd={clipStore.selectedEnd}
-              topClips={clipStore.currentBatchClips}
-              onSeek={(t) => currentTime = t}
-            />
+          <div class="flex items-center gap-1 bg-[#150000] p-0.5 rounded-lg border border-[#757D6F]/20 text-[10px]">
+            <button
+              type="button"
+              onclick={() => leftPanelMode = 'clips'}
+              class="px-2 py-0.5 rounded font-bold transition {leftPanelMode === 'clips' ? 'bg-[#D4FF00] text-black' : 'text-[#A9B3A1]'}"
+            >
+              Klip
+            </button>
+            <button
+              type="button"
+              onclick={() => leftPanelMode = 'bulk'}
+              class="px-2 py-0.5 rounded font-bold transition {leftPanelMode === 'bulk' ? 'bg-[#D4FF00] text-black' : 'text-[#A9B3A1]'}"
+              title="Bulk Export ZIP"
+            >
+              Bulk ZIP
+            </button>
           </div>
         </div>
 
-        <!-- RIGHT COLUMN: Inspector Studio Controls (Scrolls independently!) -->
-        <div class="lg:col-span-7 xl:col-span-7 h-full flex flex-col overflow-hidden bg-[#200202]/30 border border-[#757D6F]/20 rounded-2xl p-2.5">
+        {#if leftPanelMode === 'clips'}
+          <!-- Scrollable Clip Cards List (CapCut Media Pool Style) -->
+          <div class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+            {#each clipStore.analysisResult.topClips as clip}
+              {@const isActive = clip.rank === clipStore.activeClipRank}
+              {@const isDownloaded = clipStore.isClipDownloaded(clip)}
+              <button
+                type="button"
+                onclick={() => handleSelectClip(clip)}
+                class="w-full text-left p-2.5 rounded-xl border transition-all flex flex-col gap-1.5 {isActive ? 'bg-[#6D0808]/90 border-[#D4FF00] text-[#EEEAD7] shadow-lg ring-1 ring-[#D4FF00]/50' : 'bg-[#150000] border-[#757D6F]/20 text-[#A9B3A1] hover:text-[#EEEAD7] hover:border-[#757D6F]/50'}"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-1.5">
+                    <span class="px-1.5 py-0.2 rounded text-[10px] font-bold {isActive ? 'bg-[#D4FF00] text-black' : 'bg-[#2D0000] text-[#EEEAD7]'}">
+                      #{clip.rank}
+                    </span>
+                    <span class="text-[11px] font-bold {isActive ? 'text-[#D4FF00]' : 'text-[#EEEAD7]'}">
+                      {clip.score}% Skor
+                    </span>
+                    {#if clip.category}
+                      <span class="text-[9px] px-1 py-0.2 rounded bg-black/60 text-[#D4FF00]">
+                        {clip.category}
+                      </span>
+                    {/if}
+                  </div>
+
+                  {#if isDownloaded}
+                    <span class="text-[9px] text-[#D4FF00] flex items-center gap-0.5 font-bold">
+                      <CheckCircle2 size={11} />
+                      <span>Ready</span>
+                    </span>
+                  {/if}
+                </div>
+
+                <div class="flex items-center justify-between text-[10px] text-[#757D6F]">
+                  <span>{formatTime(clip.start)} - {formatTime(clip.end)}</span>
+                  <span class="font-bold text-[#A9B3A1]">{clip.duration.toFixed(1)}s</span>
+                </div>
+
+                {#if clip.label}
+                  <p class="text-[10px] leading-tight line-clamp-2 {isActive ? 'text-white' : 'text-[#A9B3A1]'}">
+                    "{clip.label}"
+                  </p>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        {:else}
+          <!-- Bulk ZIP Download Manager in Left Drawer -->
           <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-            <CaptionMoodPanel
-              {activeTranscriptText}
-              onRender={handleExport}
+            <ClipCarouselTray
+              onSelectClip={(c) => {
+                handleSelectClip(c);
+                leftPanelMode = 'clips';
+              }}
             />
           </div>
+        {/if}
+      </div>
+
+      <!-- ZONE 2: CENTER PANEL - MONITOR PLAYER & TIMELINE (col-span-5) -->
+      <div class="lg:col-span-5 h-full flex flex-col items-center justify-between gap-2.5 p-2.5 bg-[#200202]/80 border border-[#757D6F]/25 rounded-2xl shadow-xl overflow-hidden">
+        <!-- Video Monitor Canvas (Takes dominant height, scaled to fit) -->
+        <div class="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
+          <VideoPreviewCanvas
+            videoId={clipStore.analysisResult.videoId}
+            {currentTime}
+            {isPlaying}
+            burnSubtitles={clipStore.burnSubtitles}
+            aspectRatio={clipStore.aspectRatio}
+            clipStart={clipStore.selectedStart}
+            clipEnd={clipStore.selectedEnd}
+            onTogglePlay={() => isPlaying = !isPlaying}
+            onToggleSubtitles={() => clipStore.burnSubtitles = !clipStore.burnSubtitles}
+            onSeekRelative={handleSeekRelative}
+            onTimeUpdate={(t) => currentTime = t}
+          />
+        </div>
+
+        <!-- In/Out Range Trimmer Bar -->
+        <div class="flex-shrink-0 w-full flex flex-col gap-1 p-2 bg-[#150000] border border-[#757D6F]/25 rounded-xl font-mono text-[10px]">
+          <div class="flex items-center justify-between text-[#A9B3A1]">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[#757D6F]">RENTANG:</span>
+              <span class="text-[#D4FF00] font-bold">{clipStore.selectedStart.toFixed(1)}s</span>
+              <span>➔</span>
+              <span class="text-[#D4FF00] font-bold">{clipStore.selectedEnd.toFixed(1)}s</span>
+            </div>
+            <span class="px-1.5 py-0.2 rounded bg-[#2D0000] text-[#EEEAD7] font-bold border border-[#757D6F]/30 text-[9px]">
+              {clipStore.selectedDuration.toFixed(1)}s DURASI
+            </span>
+          </div>
+
+          <!-- Micro Trim Adjusters -->
+          <div class="grid grid-cols-2 gap-1.5 text-[10px]">
+            <div class="flex items-center justify-between px-2 py-0.5 bg-[#200202] rounded-lg border border-[#757D6F]/20">
+              <span class="text-[#757D6F]">START</span>
+              <div class="flex gap-1">
+                <button type="button" onclick={() => adjustInPoint(-1)} class="px-1.5 py-0.2 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
+                <button type="button" onclick={() => adjustInPoint(1)} class="px-1.5 py-0.2 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between px-2 py-0.5 bg-[#200202] rounded-lg border border-[#757D6F]/20">
+              <span class="text-[#757D6F]">END</span>
+              <div class="flex gap-1">
+                <button type="button" onclick={() => adjustOutPoint(-1)} class="px-1.5 py-0.2 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
+                <button type="button" onclick={() => adjustOutPoint(1)} class="px-1.5 py-0.2 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Heatmap Timeline Curve -->
+        <div class="flex-shrink-0 w-full">
+          <HeatmapCurve
+            points={clipStore.analysisResult.heatmapPoints}
+            duration={clipStore.analysisResult.duration}
+            {currentTime}
+            selectedStart={clipStore.selectedStart}
+            selectedEnd={clipStore.selectedEnd}
+            topClips={clipStore.currentBatchClips}
+            onSeek={(t) => currentTime = t}
+          />
         </div>
       </div>
-    {:else}
-      <!-- ALL CLIPS GALLERY & BULK EXPORT VIEW -->
-      <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-        <ClipCarouselTray
-          onSelectClip={(c) => {
-            handleSelectClip(c);
-            activeTab = 'editor';
-          }}
-        />
+
+      <!-- ZONE 3: RIGHT PANEL - STUDIO PROPERTIES INSPECTOR (col-span-4) -->
+      <div class="lg:col-span-4 h-full flex flex-col bg-[#200202]/70 border border-[#757D6F]/25 rounded-2xl p-2.5 overflow-hidden shadow-xl">
+        <!-- Inspector Scrollable Area (Only this panel scrolls!) -->
+        <div class="flex-1 overflow-y-auto pr-1.5 custom-scrollbar">
+          <CaptionMoodPanel
+            {activeTranscriptText}
+            onRender={handleExport}
+          />
+        </div>
       </div>
-    {/if}
+    </div>
   </div>
 {/if}
