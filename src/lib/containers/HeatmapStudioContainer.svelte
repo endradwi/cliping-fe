@@ -166,7 +166,7 @@
           {isPlaying}
           burnSubtitles={clipStore.burnSubtitles}
           aspectRatio={clipStore.aspectRatio}
-          {activeTranscriptText}
+          activeDialogueText={activeTranscriptText}
           onTogglePlay={() => isPlaying = !isPlaying}
           onToggleSubtitles={() => clipStore.burnSubtitles = !clipStore.burnSubtitles}
           onSeekRelative={handleSeekRelative}
