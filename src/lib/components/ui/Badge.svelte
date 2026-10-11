@@ -8,10 +8,10 @@
   } = $props();
 
   const variants = {
-    default: 'bg-[#2D0000] text-[#A9B3A1] border-[#757D6F]/40',
-    success: 'bg-[#757D6F]/25 text-[#EEEAD7] border-[#757D6F]/60',
-    hot: 'bg-[#6D0808]/40 text-[#EEEAD7] border-[#6D0808] animate-pulse',
-    outline: 'border-[#757D6F]/50 text-[#A9B3A1]'
+    default: 'bg-[#0d1c42] text-[#8fa2cb] border-[#22396f]/40',
+    success: 'bg-[#22396f]/25 text-[#fcf1d0] border-[#22396f]/60',
+    hot: 'bg-[#22396f]/40 text-[#fcf1d0] border-[#22396f] animate-pulse',
+    outline: 'border-[#22396f]/50 text-[#8fa2cb]'
   };
 </script>
 

@@ -11,24 +11,24 @@ body {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background-color: #150000;
-  color: #EEEAD7;
+  background-color: #010736;
+  color: #fcf1d0;
 }
 
-/* Custom scrollbar matching Color Hunt palette */
+/* Custom scrollbar matching Color Hunt Midnight Navy palette */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #2D0000;
+  background: #0d1c42;
 }
 ::-webkit-scrollbar-thumb {
-  background: #757D6F;
-  border-radius: 3px;
+  background: #22396f;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #6D0808;
+  background: #36569e;
 }
 
 /* Kinetic Subtitle Animation Presets (Opus/Submagic Style) */

@@ -203,7 +203,7 @@
           class="inline-block max-w-[92%] px-3 py-1.5 rounded-lg font-black tracking-tight uppercase shadow-2xl leading-snug {
             clipStore.hookTitleTheme === 'yellow' ? 'bg-[#FFE600] text-black border border-black/20' :
             clipStore.hookTitleTheme === 'red' ? 'bg-[#FF1E1E] text-white border border-white/20' :
-            clipStore.hookTitleTheme === 'neon' ? 'bg-[#D4FF00] text-black border border-black/20' :
+            clipStore.hookTitleTheme === 'neon' ? 'bg-[#fcf1d0] text-black border border-black/20' :
             'bg-black/90 text-white border border-white/25'
           }"
           style="font-size: 13px;"
@@ -226,7 +226,7 @@
               playsinline
               muted={false}
             ></video>
-            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-[#D4FF00]/40 text-[9px] font-mono font-bold text-[#D4FF00] shadow z-10">
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-[#fcf1d0]/40 text-[9px] font-mono font-bold text-[#fcf1d0] shadow z-10">
               HOST (L)
             </span>
           </div>
@@ -285,7 +285,7 @@
               style="transform: scale(1.2) translateX(25%);"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             ></iframe>
-            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-[#D4FF00]/40 text-[9px] font-mono font-bold text-[#D4FF00] z-10">
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-[#fcf1d0]/40 text-[9px] font-mono font-bold text-[#fcf1d0] z-10">
               HOST (L)
             </span>
           </div>
@@ -313,7 +313,7 @@
         ></iframe>
       {/if}
     {:else}
-      <div class="text-[#757D6F] text-sm font-mono text-center p-4">
+      <div class="text-[#22396f] text-sm font-mono text-center p-4">
         No video loaded
       </div>
     {/if}
@@ -392,7 +392,7 @@
         <button
           type="button"
           onclick={onTogglePlay}
-          class="w-7 h-7 rounded-full bg-[#D4FF00] text-black font-bold flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95"
+          class="w-7 h-7 rounded-full bg-[#fcf1d0] text-black font-bold flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95"
           title="Play / Pause (Space)"
         >
           {#if isPlaying}
@@ -431,7 +431,7 @@
         <button
           type="button"
           onclick={onToggleSubtitles}
-          class="px-2 py-0.5 rounded-md text-[11px] font-bold transition flex items-center gap-1 {burnSubtitles ? 'bg-[#D4FF00]/20 text-[#D4FF00] border border-[#D4FF00]/40' : 'bg-white/5 text-white/40'}"
+          class="px-2 py-0.5 rounded-md text-[11px] font-bold transition flex items-center gap-1 {burnSubtitles ? 'bg-[#fcf1d0]/20 text-[#fcf1d0] border border-[#fcf1d0]/40' : 'bg-white/5 text-white/40'}"
           title="Toggle Subtitle"
         >
           <Subtitles size={12} />
@@ -447,14 +447,14 @@
   </div>
 
   <!-- Keyboard Shortcuts Cheat-Sheet -->
-  <div class="flex items-center gap-2 mt-2 text-[10px] font-mono text-[#757D6F] flex-wrap justify-center">
-    <span class="px-1.5 py-0.5 bg-[#2D0000] border border-[#757D6F]/30 rounded text-[#EEEAD7]">Space</span>
+  <div class="flex items-center gap-2 mt-2 text-[10px] font-mono text-[#22396f] flex-wrap justify-center">
+    <span class="px-1.5 py-0.5 bg-[#0d1c42] border border-[#22396f]/30 rounded text-[#fcf1d0]">Space</span>
     <span>Play</span>
     <span>•</span>
-    <span class="px-1.5 py-0.5 bg-[#2D0000] border border-[#757D6F]/30 rounded text-[#EEEAD7]">I / O</span>
+    <span class="px-1.5 py-0.5 bg-[#0d1c42] border border-[#22396f]/30 rounded text-[#fcf1d0]">I / O</span>
     <span>In/Out</span>
     <span>•</span>
-    <span class="px-1.5 py-0.5 bg-[#2D0000] border border-[#757D6F]/30 rounded text-[#EEEAD7]">J / L</span>
+    <span class="px-1.5 py-0.5 bg-[#0d1c42] border border-[#22396f]/30 rounded text-[#fcf1d0]">J / L</span>
     <span>±5s</span>
   </div>
 </div>

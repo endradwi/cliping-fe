@@ -130,11 +130,11 @@
 
 <div class="w-full max-w-2xl mx-auto flex flex-col items-center relative">
   <!-- Mode Switcher Tabs -->
-  <div class="flex items-center gap-2 p-1 bg-[#150000] border border-[#757D6F]/30 rounded-xl mb-4 self-center font-mono text-xs shadow-lg">
+  <div class="flex items-center gap-2 p-1 bg-[#010736] border border-[#22396f]/30 rounded-xl mb-4 self-center font-mono text-xs shadow-lg">
     <button
       type="button"
       onclick={() => { activeTab = 'youtube'; errorMsg = null; isYoutubeBlocked = false; }}
-      class="px-4 py-2 rounded-lg transition flex items-center gap-2 {activeTab === 'youtube' ? 'bg-[#6D0808] text-[#EEEAD7] font-bold shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+      class="px-4 py-2 rounded-lg transition flex items-center gap-2 {activeTab === 'youtube' ? 'bg-[#22396f] text-[#fcf1d0] font-bold shadow' : 'text-[#8fa2cb] hover:text-[#fcf1d0]'}"
     >
       <Youtube size={15} />
       <span>YouTube URL</span>
@@ -143,11 +143,11 @@
     <button
       type="button"
       onclick={() => { activeTab = 'upload'; errorMsg = null; isYoutubeBlocked = false; }}
-      class="px-4 py-2 rounded-lg transition flex items-center gap-2 {activeTab === 'upload' ? 'bg-[#D4FF00] text-black font-bold shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+      class="px-4 py-2 rounded-lg transition flex items-center gap-2 {activeTab === 'upload' ? 'bg-[#fcf1d0] text-black font-bold shadow' : 'text-[#8fa2cb] hover:text-[#fcf1d0]'}"
     >
       <UploadCloud size={15} />
       <span>Upload File (Up to 2h VOD)</span>
-      <span class="text-[9px] px-1.5 py-0.2 bg-black/40 text-[#D4FF00] rounded-full border border-[#D4FF00]/30 hidden sm:inline">Zero-Block</span>
+      <span class="text-[9px] px-1.5 py-0.2 bg-black/40 text-[#fcf1d0] rounded-full border border-[#fcf1d0]/30 hidden sm:inline">Zero-Block</span>
     </button>
   </div>
 
@@ -165,7 +165,7 @@
       ondragover={(e) => { e.preventDefault(); isDragging = true; }}
       ondragleave={() => isDragging = false}
       ondrop={handleDrop}
-      class="w-full p-8 border-2 border-dashed rounded-2xl transition-all text-center flex flex-col items-center justify-center gap-3 relative shadow-xl {isDragging || isWindowDragging ? 'border-[#D4FF00] bg-[#D4FF00]/10 scale-[1.01]' : 'border-[#757D6F]/40 bg-[#2D0000]/60 hover:border-[#757D6F]/80'}"
+      class="w-full p-8 border-2 border-dashed rounded-2xl transition-all text-center flex flex-col items-center justify-center gap-3 relative shadow-xl {isDragging || isWindowDragging ? 'border-[#fcf1d0] bg-[#fcf1d0]/10 scale-[1.01]' : 'border-[#22396f]/40 bg-[#0d1c42]/60 hover:border-[#22396f]/80'}"
     >
       <input
         type="file"
@@ -180,8 +180,8 @@
 
       {#if clipStore.isUploading || clipStore.isAnalyzing}
         <div class="flex flex-col items-center gap-3 w-full max-w-sm">
-          <Loader2 size={36} class="text-[#D4FF00] animate-spin" />
-          <div class="text-sm font-bold text-[#EEEAD7] font-mono">
+          <Loader2 size={36} class="text-[#fcf1d0] animate-spin" />
+          <div class="text-sm font-bold text-[#fcf1d0] font-mono">
             {#if clipStore.isUploading}
               Mengunggah video... ({clipStore.uploadProgress}%)
             {:else}
@@ -189,56 +189,56 @@
             {/if}
           </div>
           <!-- Upload Progress bar -->
-          <div class="w-full bg-[#150000] h-2.5 rounded-full overflow-hidden border border-[#757D6F]/30 shadow-inner">
+          <div class="w-full bg-[#010736] h-2.5 rounded-full overflow-hidden border border-[#22396f]/30 shadow-inner">
             <div
-              class="bg-[#D4FF00] h-full transition-all duration-200"
+              class="bg-[#fcf1d0] h-full transition-all duration-200"
               style="width: {clipStore.uploadProgress}%;"
             ></div>
           </div>
-          <span class="text-[11px] text-[#A9B3A1] font-mono truncate max-w-xs">{clipStore.uploadFilename}</span>
-          <span class="text-[10px] text-[#757D6F] font-mono">Supports long podcasts & Twitch VODs (up to 2h)</span>
+          <span class="text-[11px] text-[#8fa2cb] font-mono truncate max-w-xs">{clipStore.uploadFilename}</span>
+          <span class="text-[10px] text-[#22396f] font-mono">Supports long podcasts & Twitch VODs (up to 2h)</span>
         </div>
       {:else}
-        <div class="w-14 h-14 rounded-2xl bg-[#150000] border border-[#757D6F]/40 flex items-center justify-center text-[#D4FF00] shadow-lg">
+        <div class="w-14 h-14 rounded-2xl bg-[#010736] border border-[#22396f]/40 flex items-center justify-center text-[#fcf1d0] shadow-lg">
           <UploadCloud size={28} />
         </div>
         <div>
-          <h3 class="text-sm font-bold text-[#EEEAD7]">Drag & drop video file or click to browse</h3>
-          <p class="text-xs text-[#A9B3A1] mt-1 font-mono">Supports 1-2h Podcasts, Twitch VODs & Zoom Recordings (MP4, MOV, WEBM)</p>
+          <h3 class="text-sm font-bold text-[#fcf1d0]">Drag & drop video file or click to browse</h3>
+          <p class="text-xs text-[#8fa2cb] mt-1 font-mono">Supports 1-2h Podcasts, Twitch VODs & Zoom Recordings (MP4, MOV, WEBM)</p>
         </div>
         <div class="flex items-center gap-2 mt-2">
           <button
             type="button"
             onclick={() => fileInputRef?.click()}
-            class="px-5 py-2.5 rounded-xl bg-[#D4FF00] hover:bg-[#c7f000] text-black font-bold font-mono text-xs transition shadow-lg flex items-center gap-2 hover:scale-105 active:scale-95"
+            class="px-5 py-2.5 rounded-xl bg-[#fcf1d0] hover:bg-[#e9dfb8] text-black font-bold font-mono text-xs transition shadow-lg flex items-center gap-2 hover:scale-105 active:scale-95"
           >
             <FileVideo size={16} />
             <span>Select Video File</span>
           </button>
         </div>
-        <span class="text-[10px] font-mono text-[#757D6F] mt-1">Tip: PC/Laptop users can also press Ctrl+V to paste a copied video file!</span>
+        <span class="text-[10px] font-mono text-[#22396f] mt-1">Tip: PC/Laptop users can also press Ctrl+V to paste a copied video file!</span>
       {/if}
     </div>
   {/if}
 
   <!-- PROACTIVE SMART RESCUE CARD (When YouTube link gets bot blocked or errors) -->
   {#if isYoutubeBlocked}
-    <div class="w-full mt-4 p-4 bg-[#2D0000] border-2 border-[#D4FF00]/60 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xl animate-in fade-in zoom-in duration-300">
+    <div class="w-full mt-4 p-4 bg-[#0d1c42] border-2 border-[#fcf1d0]/60 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xl animate-in fade-in zoom-in duration-300">
       <div class="flex items-start gap-3">
-        <div class="p-2.5 bg-[#D4FF00]/10 text-[#D4FF00] rounded-xl flex-shrink-0">
+        <div class="p-2.5 bg-[#fcf1d0]/10 text-[#fcf1d0] rounded-xl flex-shrink-0">
           <ShieldAlert size={22} />
         </div>
         <div class="text-left">
-          <h4 class="text-xs sm:text-sm font-bold text-[#EEEAD7]">YouTube Blocked Direct Link Scraping</h4>
-          <p class="text-[11px] text-[#A9B3A1] mt-0.5 leading-relaxed">
-            Don't leave! You can upload the video file directly (MP4/MOV) with <span class="text-[#D4FF00] font-bold">100% success rate</span> and zero bot restrictions.
+          <h4 class="text-xs sm:text-sm font-bold text-[#fcf1d0]">YouTube Blocked Direct Link Scraping</h4>
+          <p class="text-[11px] text-[#8fa2cb] mt-0.5 leading-relaxed">
+            Don't leave! You can upload the video file directly (MP4/MOV) with <span class="text-[#fcf1d0] font-bold">100% success rate</span> and zero bot restrictions.
           </p>
         </div>
       </div>
       <button
         type="button"
         onclick={switchToUpload}
-        class="px-4 py-2.5 bg-[#D4FF00] hover:bg-[#c7f000] text-black font-bold font-mono text-xs rounded-xl shadow-lg flex items-center gap-1.5 whitespace-nowrap hover:scale-105 active:scale-95 flex-shrink-0"
+        class="px-4 py-2.5 bg-[#fcf1d0] hover:bg-[#e9dfb8] text-black font-bold font-mono text-xs rounded-xl shadow-lg flex items-center gap-1.5 whitespace-nowrap hover:scale-105 active:scale-95 flex-shrink-0"
       >
         <UploadCloud size={16} />
         <span>Upload File Instead ➔</span>
@@ -246,7 +246,7 @@
     </div>
   {:else if errorMsg}
     <!-- Regular Notice -->
-    <div class="w-full mt-4 px-4 py-3 bg-[#2D0000] border border-[#6D0808] text-[#EEEAD7] text-xs rounded-xl flex items-center justify-between gap-2 shadow-lg">
+    <div class="w-full mt-4 px-4 py-3 bg-[#0d1c42] border border-[#22396f] text-[#fcf1d0] text-xs rounded-xl flex items-center justify-between gap-2 shadow-lg">
       <div class="flex items-center gap-2">
         <AlertCircle size={16} class="text-red-400 flex-shrink-0" />
         <div><span class="font-bold text-red-400">Notice:</span> {errorMsg}</div>
@@ -254,7 +254,7 @@
       <button
         type="button"
         onclick={() => { activeTab = 'upload'; errorMsg = null; }}
-        class="text-[11px] font-mono text-[#D4FF00] hover:underline whitespace-nowrap"
+        class="text-[11px] font-mono text-[#fcf1d0] hover:underline whitespace-nowrap"
       >
         Try uploading file ➔
       </button>

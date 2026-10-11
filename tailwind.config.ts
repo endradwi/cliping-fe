@@ -6,44 +6,40 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Color Hunt Palette: #6D0808, #2D0000, #757D6F, #EEEAD7
-        maroon: {
-          950: '#150000',
-          900: '#2D0000', // Base dark surface
-          800: '#3D0404',
-          700: '#520707',
-          600: '#6D0808', // Primary brand crimson
-          500: '#870E0E',
-          400: '#A81818'
-        },
-        sage: {
-          800: '#474D43',
-          700: '#5E6559',
-          600: '#757D6F', // Muted slate olive
-          500: '#8E9787',
-          400: '#A9B3A1',
-          300: '#C7D0BF'
+        // Color Hunt Midnight Navy: #010736, #0D1C42, #22396F, #FCF1D0
+        navy: {
+          950: '#010736', // Deep Obsidian Midnight canvas
+          900: '#0D1C42', // Surface panel
+          800: '#162854', // Hover surface
+          700: '#22396F', // Elevated card & borders
+          600: '#2D4B91',
+          500: '#3E64BD'
         },
         cream: {
           100: '#FFFFFF',
-          DEFAULT: '#EEEAD7', // High contrast ivory text
-          200: '#DDD8C1',
-          300: '#C7C1A7'
+          DEFAULT: '#FCF1D0', // Warm ivory cream text & accent
+          200: '#F5E8B8',
+          300: '#EBD899'
         },
-        background: '#150000',
-        surface: '#2D0000',
-        card: '#220000',
-        border: '#450707',
-        muted: '#757D6F',
-        'muted-foreground': '#A9B3A1',
+        slateBlue: {
+          400: '#8FA2CB',
+          500: '#677FA8',
+          600: '#485C80'
+        },
+        background: '#010736',
+        surface: '#0D1C42',
+        card: '#162854',
+        border: '#22396F',
+        muted: '#677FA8',
+        'muted-foreground': '#8FA2CB',
         primary: {
-          DEFAULT: '#6D0808',
-          hover: '#870E0E',
-          foreground: '#EEEAD7'
+          DEFAULT: '#FCF1D0',
+          hover: '#F5E8B8',
+          foreground: '#010736'
         },
         secondary: {
-          DEFAULT: '#757D6F',
-          foreground: '#EEEAD7'
+          DEFAULT: '#22396F',
+          foreground: '#FCF1D0'
         }
       },
       fontFamily: {

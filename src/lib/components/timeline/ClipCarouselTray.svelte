@@ -22,7 +22,7 @@
         return 'bg-rose-500/20 text-rose-300 border-rose-500/40';
       case 'INSP':
       default:
-        return 'bg-[#D4FF00]/20 text-[#D4FF00] border-[#D4FF00]/40';
+        return 'bg-[#fcf1d0]/20 text-[#fcf1d0] border-[#fcf1d0]/40';
     }
   }
 
@@ -129,15 +129,15 @@
   }
 </script>
 
-<div class="w-full flex flex-col gap-3 p-4 bg-[#150000]/90 border border-[#757D6F]/30 rounded-2xl backdrop-blur-md shadow-2xl">
+<div class="w-full flex flex-col gap-3 p-4 bg-[#010736]/90 border border-[#22396f]/30 rounded-2xl backdrop-blur-md shadow-2xl">
   <!-- Top Bar: Filter Tabs & Bulk Actions -->
-  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-[#757D6F]/20">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-[#22396f]/20">
     <!-- Filter Tabs -->
     <div class="flex items-center gap-2 overflow-x-auto">
       <button
         type="button"
         onclick={() => clipStore.clipFilter = 'all'}
-        class="px-3 py-1 rounded-full text-xs font-mono transition {clipStore.clipFilter === 'all' ? 'bg-[#D4FF00] text-black font-bold' : 'bg-[#2D0000] text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+        class="px-3 py-1 rounded-full text-xs font-mono transition {clipStore.clipFilter === 'all' ? 'bg-[#fcf1d0] text-black font-bold' : 'bg-[#0d1c42] text-[#8fa2cb] hover:text-[#fcf1d0]'}"
       >
         All {clipStore.analysisResult?.topClips.length || 0}
       </button>
@@ -145,16 +145,16 @@
       <button
         type="button"
         onclick={() => clipStore.clipFilter = 'hot'}
-        class="px-3 py-1 rounded-full text-xs font-mono transition flex items-center gap-1 {clipStore.clipFilter === 'hot' ? 'bg-[#6D0808] text-[#EEEAD7] font-bold border border-[#870E0E]' : 'bg-[#2D0000] text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+        class="px-3 py-1 rounded-full text-xs font-mono transition flex items-center gap-1 {clipStore.clipFilter === 'hot' ? 'bg-[#22396f] text-[#fcf1d0] font-bold border border-[#22396f]' : 'bg-[#0d1c42] text-[#8fa2cb] hover:text-[#fcf1d0]'}"
       >
-        <Flame size={12} class="text-[#EEEAD7]" />
+        <Flame size={12} class="text-[#fcf1d0]" />
         <span>Hot Peaks</span>
       </button>
 
       <button
         type="button"
         onclick={() => clipStore.clipFilter = 'downloaded'}
-        class="px-3 py-1 rounded-full text-xs font-mono transition flex items-center gap-1 {clipStore.clipFilter === 'downloaded' ? 'bg-emerald-600 text-white font-bold' : 'bg-[#2D0000] text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+        class="px-3 py-1 rounded-full text-xs font-mono transition flex items-center gap-1 {clipStore.clipFilter === 'downloaded' ? 'bg-emerald-600 text-white font-bold' : 'bg-[#0d1c42] text-[#8fa2cb] hover:text-[#fcf1d0]'}"
       >
         <CheckCircle size={12} />
         <span>Downloaded</span>
@@ -167,7 +167,7 @@
         <button
           type="button"
           onclick={() => clipStore.deselectAllClips()}
-          class="text-xs font-mono text-[#A9B3A1] hover:text-[#EEEAD7] underline"
+          class="text-xs font-mono text-[#8fa2cb] hover:text-[#fcf1d0] underline"
         >
           Deselect All
         </button>
@@ -175,7 +175,7 @@
         <button
           type="button"
           onclick={() => clipStore.selectAllClips()}
-          class="text-xs font-mono text-[#D4FF00] hover:underline"
+          class="text-xs font-mono text-[#fcf1d0] hover:underline"
         >
           Select All ({clipStore.analysisResult?.topClips.length || 0})
         </button>
@@ -186,7 +186,7 @@
         type="button"
         disabled={isBulkProcessing || clipStore.selectedClipIdsForBulk.length === 0}
         onclick={handleBulkDownload}
-        class="px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition flex items-center gap-1.5 shadow-lg bg-[#D4FF00] text-black hover:bg-[#c7f000] disabled:opacity-40 disabled:cursor-not-allowed"
+        class="px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition flex items-center gap-1.5 shadow-lg bg-[#fcf1d0] text-black hover:bg-[#e9dfb8] disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {#if isBulkProcessing}
           <Loader2 size={13} class="animate-spin" />
@@ -200,7 +200,7 @@
   </div>
 
   <!-- Horizontal Scrollable Cards Strip -->
-  <div class="flex items-center gap-3 overflow-x-auto pb-2 pt-1 scrollbar-thin scrollbar-thumb-[#757D6F]/30">
+  <div class="flex items-center gap-3 overflow-x-auto pb-2 pt-1 scrollbar-thin scrollbar-thumb-[#22396f]/30">
     {#each clipStore.filteredClips as clip}
       {@const isSelected = clipStore.activeClipRank === clip.rank}
       {@const isChecked = clipStore.selectedClipIdsForBulk.includes(clip.id)}
@@ -208,20 +208,20 @@
       {@const cat = clip.category || (clip.rank % 3 === 1 ? 'EDU' : (clip.rank % 3 === 2 ? 'CTRL' : 'INSP'))}
 
       <div
-        class="flex-shrink-0 w-48 sm:w-52 p-3 rounded-xl text-left font-mono transition-all relative flex flex-col justify-between gap-2.5 border {isDownloaded ? 'bg-[#18281a]/90 border-emerald-500/60 shadow-md shadow-emerald-950/40' : (isSelected ? 'bg-[#2D0000] border-[#D4FF00] shadow-lg shadow-[#D4FF00]/10' : 'bg-[#1a0000] border-[#757D6F]/25 hover:border-[#757D6F]/60')}"
+        class="flex-shrink-0 w-48 sm:w-52 p-3 rounded-xl text-left font-mono transition-all relative flex flex-col justify-between gap-2.5 border {isDownloaded ? 'bg-[#18281a]/90 border-emerald-500/60 shadow-md shadow-emerald-950/40' : (isSelected ? 'bg-[#0d1c42] border-[#fcf1d0] shadow-lg shadow-[#fcf1d0]/10' : 'bg-[#1a0000] border-[#22396f]/25 hover:border-[#22396f]/60')}"
       >
         <!-- Card Header: Checkbox + Badges -->
         <div class="flex items-center justify-between w-full">
           <button
             type="button"
             onclick={(e) => { e.stopPropagation(); clipStore.toggleBulkSelect(clip.id); }}
-            class="text-[#D4FF00] hover:scale-110 transition-transform p-0.5"
+            class="text-[#fcf1d0] hover:scale-110 transition-transform p-0.5"
             title="Select for bulk ZIP"
           >
             {#if isChecked}
-              <CheckSquare size={16} class="fill-[#D4FF00] text-black" />
+              <CheckSquare size={16} class="fill-[#fcf1d0] text-black" />
             {:else}
-              <Square size={16} class="text-[#757D6F]" />
+              <Square size={16} class="text-[#22396f]" />
             {/if}
           </button>
 
@@ -241,14 +241,14 @@
           onclick={() => onSelectClip(clip)}
           class="text-left w-full cursor-pointer focus:outline-none"
         >
-          <div class="text-xs font-bold text-[#EEEAD7] line-clamp-1 flex items-center gap-1">
+          <div class="text-xs font-bold text-[#fcf1d0] line-clamp-1 flex items-center gap-1">
             {#if isSelected}
-              <Play size={11} class="text-[#D4FF00] fill-[#D4FF00]" />
+              <Play size={11} class="text-[#fcf1d0] fill-[#fcf1d0]" />
             {/if}
             <span>Clip #{clip.rank}</span>
           </div>
 
-          <div class="text-[11px] text-[#A9B3A1] mt-0.5">
+          <div class="text-[11px] text-[#8fa2cb] mt-0.5">
             {clip.start}s – {clip.end}s ({clip.duration}s)
           </div>
 
@@ -260,7 +260,7 @@
                 <span>DOWNLOADED ✓</span>
               </span>
             {:else}
-              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/5 text-[#A9B3A1] text-[10px]">
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/5 text-[#8fa2cb] text-[10px]">
                 <span>NEW CLIP</span>
               </span>
             {/if}
@@ -268,12 +268,12 @@
         </button>
 
         <!-- Footer: 9:16 Aspect Pill & Selection Trigger -->
-        <div class="flex items-center justify-between pt-1 border-t border-white/10 text-[10px] text-[#757D6F]">
+        <div class="flex items-center justify-between pt-1 border-t border-white/10 text-[10px] text-[#22396f]">
           <span class="px-1.5 py-0.2 bg-black/40 rounded text-white/50">9:16</span>
           <button
             type="button"
             onclick={() => onSelectClip(clip)}
-            class="text-[#D4FF00] font-bold hover:underline"
+            class="text-[#fcf1d0] font-bold hover:underline"
           >
             {isSelected ? 'ACTIVE' : 'PREVIEW ➔'}
           </button>
@@ -282,7 +282,7 @@
     {/each}
 
     {#if clipStore.filteredClips.length === 0}
-      <div class="p-6 text-xs font-mono text-[#757D6F] text-center w-full">
+      <div class="p-6 text-xs font-mono text-[#22396f] text-center w-full">
         No clips found matching "{clipStore.clipFilter}" filter.
       </div>
     {/if}
