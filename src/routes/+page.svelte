@@ -15,11 +15,11 @@
       </div>
 
       <h1 class="text-4xl md:text-5xl font-black tracking-tight text-[#EEEAD7] mb-4">
-        Turn YouTube Videos Into <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#EEEAD7] via-[#C7D0BF] to-[#6D0808]">Viral 9:16 Clips</span>
+        Turn Long Videos Into <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#EEEAD7] via-[#C7D0BF] to-[#6D0808]">Viral Short Clips</span>
       </h1>
 
       <p class="text-sm md:text-base text-[#A9B3A1] mb-8 leading-relaxed">
-        Extract the exact moments audiences replayed most. Zero-disk stream slicing, automated 9:16 vertical cropping, and instant Cloudflare R2 delivery.
+        Extract peak audience retention moments or AI spoken dialogue hooks from 2-hour podcasts, Twitch streams, and YouTube videos. Multi-aspect ratio, live kinetic captions, and bulk ZIP exports.
       </p>
 
       <!-- URL Input Field Container -->
@@ -29,18 +29,18 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-xl mx-auto mt-12 text-left">
         <div class="p-3.5 bg-[#2D0000]/60 border border-[#757D6F]/30 rounded-xl">
           <Zap size={16} class="text-[#EEEAD7] mb-2" />
-          <h2 class="text-xs font-bold text-[#EEEAD7] mb-1">Top 3 Batch Slicing</h2>
-          <p class="text-[11px] text-[#A9B3A1]">3 peak retention highlights ready in seconds.</p>
+          <h2 class="text-xs font-bold text-[#EEEAD7] mb-1">Up to 2h VOD Support</h2>
+          <p class="text-[11px] text-[#A9B3A1]">Intelligent audio chunking handles long podcasts seamlessly.</p>
         </div>
         <div class="p-3.5 bg-[#2D0000]/60 border border-[#757D6F]/30 rounded-xl">
           <Sparkles size={16} class="text-[#EEEAD7] mb-2" />
-          <h2 class="text-xs font-bold text-[#EEEAD7] mb-1">Zero-Disk Stream</h2>
-          <p class="text-[11px] text-[#A9B3A1]">FFmpeg cuts directly without saving 1GB files.</p>
+          <h2 class="text-xs font-bold text-[#EEEAD7] mb-1">Dual Video Source</h2>
+          <p class="text-[11px] text-[#A9B3A1]">Zero-block direct R2 upload + YouTube telemetry curve.</p>
         </div>
         <div class="p-3.5 bg-[#2D0000]/60 border border-[#757D6F]/30 rounded-xl">
           <ShieldCheck size={16} class="text-[#EEEAD7] mb-2" />
-          <h2 class="text-xs font-bold text-[#EEEAD7] mb-1">Pure Telemetry (RPI)</h2>
-          <p class="text-[11px] text-[#A9B3A1]">Mathematical retention curve, zero AI hallucination.</p>
+          <h2 class="text-xs font-bold text-[#EEEAD7] mb-1">Bulk ZIP Download</h2>
+          <p class="text-[11px] text-[#A9B3A1]">Package all rendered clips in 1 click right in browser.</p>
         </div>
       </div>
     </div>
