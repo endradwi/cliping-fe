@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Play, Pause, RotateCcw, RotateCw, Subtitles, Maximize2, Crop } from 'lucide-svelte';
+  import { Play, Pause, RotateCcw, RotateCw, Subtitles, Crop } from 'lucide-svelte';
   import { clipStore } from '../../stores/clip.svelte';
 
   let {
@@ -23,6 +23,8 @@
     onToggleSubtitles: () => void;
     onSeekRelative?: (seconds: number) => void;
   } = $props();
+
+  let videoElement = $state<HTMLVideoElement | null>(null);
 
   // Responsive frame dimensions avoiding any column overflow
   const frameClass = $derived.by(() => {
@@ -50,6 +52,20 @@
     }
   });
 
+  // Sync native HTML5 video element with play state & seek
+  $effect(() => {
+    if (videoElement && clipStore.analysisResult?.directVideoUrl) {
+      if (Math.abs(videoElement.currentTime - currentTime) > 1.5) {
+        videoElement.currentTime = currentTime;
+      }
+      if (isPlaying && videoElement.paused) {
+        videoElement.play().catch(() => {});
+      } else if (!isPlaying && !videoElement.paused) {
+        videoElement.pause();
+      }
+    }
+  });
+
   function formatTime(seconds: number): string {
     const s = Math.max(0, Math.floor(seconds));
     const m = Math.floor(s / 60);
@@ -69,7 +85,17 @@
 <div class="flex flex-col items-center w-full">
   <!-- Dynamic Phone / Desktop Frame -->
   <div class="relative {frameClass} bg-[#0c0c0e] rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl flex items-center justify-center group transition-all">
-    {#if videoId}
+    {#if clipStore.analysisResult?.directVideoUrl}
+      <!-- HTML5 Direct Video Player for Uploaded MP4/MOV -->
+      <video
+        bind:this={videoElement}
+        src={clipStore.analysisResult.directVideoUrl}
+        class="w-full h-full object-cover pointer-events-none"
+        playsinline
+        muted={false}
+      ></video>
+    {:else if videoId}
+      <!-- YouTube Embedded Preview -->
       <iframe
         id="preview-iframe"
         src="https://www.youtube-nocookie.com/embed/{videoId}?start={Math.floor(currentTime)}&autoplay={isPlaying ? 1 : 0}&controls=0&modestbranding=1&rel=0"
@@ -84,7 +110,7 @@
     {/if}
 
     <!-- Simulated Kinetic Subtitle Overlay -->
-    {#if burnSubtitles && videoId}
+    {#if burnSubtitles && (videoId || clipStore.analysisResult?.directVideoUrl)}
       <div
         class="absolute inset-x-3 text-center pointer-events-none transition-all px-2 z-10"
         style="top: {clipStore.subtitlePosY}%;"

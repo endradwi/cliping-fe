@@ -12,6 +12,9 @@
         clipStore.renderProgress = data;
         if (data.status === 'completed' || data.status === 'failed') {
           clipStore.isRendering = false;
+          if (data.status === 'completed' && data.r2Url) {
+            clipStore.markClipDownloaded(clipStore.selectedStart, clipStore.selectedEnd, data.id, data.r2Url);
+          }
         }
       });
     }

@@ -1,4 +1,5 @@
 import type { VideoAnalysisResult, CandidateClip, RenderJobProgress } from '../types';
+import { fetchClipHistory } from '../services/api.client';
 
 export type SubtitleAnimation = 'POP' | 'FADE' | 'RISE' | 'DROP' | 'ZOOM' | 'TYPE' | 'OFF';
 
@@ -7,8 +8,13 @@ class ClipStudioStore {
   videoUrl = $state<string>('');
   isAnalyzing = $state<boolean>(false);
   analysisResult = $state<VideoAnalysisResult | null>(null);
+
+  // Upload state (Direct Browser-to-R2)
+  isUploading = $state<boolean>(false);
+  uploadProgress = $state<number>(0);
+  uploadFilename = $state<string>('');
   
-  // Batch Management (SOP: 1 Batch = 3 Videos)
+  // Batch Management (SOP: 1 Batch = 3 Videos, but user can view all)
   currentBatch = $state<number>(1);
   
   // Selected range
@@ -28,8 +34,15 @@ class ClipStudioStore {
   subtitlePosY = $state<number>(80); // percentage from top
   wordsPerChunk = $state<number>(2);
   highlightedWordIndices = $state<number[]>([0]); // words to highlight
-  clipFilter = $state<'all' | 'hot' | 'rendered'>('all');
+  clipFilter = $state<'all' | 'hot' | 'downloaded'>('all');
   
+  // Bulk Download state
+  selectedClipIdsForBulk = $state<string[]>([]);
+  bulkDownloadProgress = $state<{ current: number; total: number; message: string } | null>(null);
+
+  // History tracking (key: `${start}_${end}` -> r2Url)
+  downloadedJobs = $state<Record<string, { id: string; r2Url: string }>>({});
+
   // Render pipeline state
   activeJobId = $state<string | null>(null);
   renderProgress = $state<RenderJobProgress | null>(null);
@@ -53,22 +66,79 @@ class ClipStudioStore {
   filteredClips = $derived.by(() => {
     const all = this.analysisResult?.topClips || [];
     if (this.clipFilter === 'hot') {
-      return all.filter(c => c.score >= 65);
+      return all.filter(c => c.score >= 75);
     }
-    if (this.clipFilter === 'rendered') {
-      return this.renderProgress?.status === 'completed' ? all.slice(0, 1) : [];
+    if (this.clipFilter === 'downloaded') {
+      return all.filter(c => this.isClipDownloaded(c));
     }
     return all;
   });
 
-  setAnalysis(data: VideoAnalysisResult, rawUrl: string) {
+  isClipDownloaded(clip: CandidateClip): boolean {
+    const key = `${Math.round(clip.start)}_${Math.round(clip.end)}`;
+    return Boolean(this.downloadedJobs[key]);
+  }
+
+  getClipDownloadUrl(clip: CandidateClip): string | null {
+    const key = `${Math.round(clip.start)}_${Math.round(clip.end)}`;
+    return this.downloadedJobs[key]?.r2Url || null;
+  }
+
+  async setAnalysis(data: VideoAnalysisResult, rawUrl: string) {
     this.analysisResult = data;
     this.videoUrl = rawUrl;
     this.currentBatch = 1;
     this.highlightedWordIndices = [0];
+    this.selectedClipIdsForBulk = [];
+
     if (data.topClips.length > 0) {
       this.selectClip(data.topClips[0]);
     }
+
+    // Sync history for this video (detect previous downloads)
+    await this.syncHistory(rawUrl);
+  }
+
+  async syncHistory(url: string) {
+    if (!url) return;
+    try {
+      const history = await fetchClipHistory(url);
+      const newMap: Record<string, { id: string; r2Url: string }> = { ...this.downloadedJobs };
+      for (const item of history) {
+        if (item.r2Url) {
+          const key = `${Math.round(item.start)}_${Math.round(item.end)}`;
+          newMap[key] = { id: item.id, r2Url: item.r2Url };
+        }
+      }
+      this.downloadedJobs = newMap;
+    } catch {
+      // offline or table uninitialized
+    }
+  }
+
+  markClipDownloaded(start: number, end: number, id: string, r2Url: string) {
+    const key = `${Math.round(start)}_${Math.round(end)}`;
+    this.downloadedJobs = {
+      ...this.downloadedJobs,
+      [key]: { id, r2Url }
+    };
+  }
+
+  toggleBulkSelect(clipId: string) {
+    if (this.selectedClipIdsForBulk.includes(clipId)) {
+      this.selectedClipIdsForBulk = this.selectedClipIdsForBulk.filter(id => id !== clipId);
+    } else {
+      this.selectedClipIdsForBulk = [...this.selectedClipIdsForBulk, clipId];
+    }
+  }
+
+  selectAllClips() {
+    const allIds = (this.analysisResult?.topClips || []).map(c => c.id);
+    this.selectedClipIdsForBulk = allIds;
+  }
+
+  deselectAllClips() {
+    this.selectedClipIdsForBulk = [];
   }
 
   setBatch(batch: number) {
@@ -116,7 +186,12 @@ class ClipStudioStore {
     this.activeJobId = null;
     this.renderProgress = null;
     this.isRendering = false;
+    this.isUploading = false;
+    this.uploadProgress = 0;
+    this.uploadFilename = '';
     this.highlightedWordIndices = [0];
+    this.selectedClipIdsForBulk = [];
+    this.bulkDownloadProgress = null;
   }
 }
 

@@ -70,11 +70,23 @@
         title: clipStore.analysisResult.title
       });
       clipStore.activeJobId = res.jobId;
-      clipStore.renderProgress = {
-        id: res.jobId,
-        status: 'queued',
-        progressPercent: 10
-      };
+      if (res.cached && res.r2Url) {
+        clipStore.renderProgress = {
+          id: res.jobId,
+          status: 'completed',
+          progressPercent: 100,
+          r2Url: res.r2Url,
+          cached: true
+        };
+        clipStore.isRendering = false;
+        clipStore.markClipDownloaded(clipStore.selectedStart, clipStore.selectedEnd, res.jobId, res.r2Url);
+      } else {
+        clipStore.renderProgress = {
+          id: res.jobId,
+          status: 'queued',
+          progressPercent: 10
+        };
+      }
     } catch (err: any) {
       alert(`Render error: ${err.message}`);
       clipStore.isRendering = false;

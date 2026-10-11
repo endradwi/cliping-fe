@@ -13,6 +13,8 @@ export interface CandidateClip {
   score: number;
   label: string;
   category?: 'EDU' | 'CTRL' | 'INSP';
+  isDownloaded?: boolean;
+  downloadUrl?: string;
 }
 
 export interface TranscriptLine {
@@ -30,6 +32,8 @@ export interface VideoAnalysisResult {
   heatmapPoints: HeatmapPoint[];
   topClips: CandidateClip[];
   transcript?: TranscriptLine[];
+  isUploadedVideo?: boolean;
+  directVideoUrl?: string;
 }
 
 export interface RenderJobProgress {
@@ -38,4 +42,5 @@ export interface RenderJobProgress {
   progressPercent: number;
   r2Url?: string | null;
   error?: string | null;
+  cached?: boolean;
 }

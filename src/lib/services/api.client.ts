@@ -17,6 +17,80 @@ export async function analyzeVideoUrl(url: string): Promise<VideoAnalysisResult>
   return json.data;
 }
 
+// Request presigned upload credentials for direct client-to-R2 upload (zero VPS load)
+export async function getPresignedUploadUrl(filename: string, contentType: string = 'video/mp4'): Promise<{ presignedUrl: string; publicUrl: string; key: string }> {
+  const res = await fetch(`${API_BASE}/api/v1/upload/presign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename, contentType })
+  });
+
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.error?.message || 'Failed to get upload authorization');
+  }
+
+  return json.data;
+}
+
+// Direct browser-to-R2 upload with native byte-level progress reporting
+export function uploadFileToR2(
+  presignedUrl: string,
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', presignedUrl);
+    xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        onProgress(pct);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(new Error(`R2 direct upload rejected with status ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network connection failed during R2 upload'));
+    xhr.send(file);
+  });
+}
+
+// Analyze directly uploaded video from R2 URL
+export async function analyzeUploadedVideo(r2Url: string, title?: string, filename?: string): Promise<VideoAnalysisResult> {
+  const res = await fetch(`${API_BASE}/api/v1/analyze/upload`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ r2Url, title, filename })
+  });
+
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.error?.message || 'Failed to analyze uploaded video');
+  }
+
+  return json.data;
+}
+
+// Fetch historical rendered clips for a given video
+export async function fetchClipHistory(url: string): Promise<any[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/clips/history?url=${encodeURIComponent(url)}`);
+    const json = await res.json();
+    return json.success && Array.isArray(json.data) ? json.data : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function triggerRenderClip(payload: {
   url: string;
   start: number;
@@ -24,7 +98,7 @@ export async function triggerRenderClip(payload: {
   aspectRatio: string;
   burnSubtitles: boolean;
   title?: string;
-}): Promise<{ jobId: string }> {
+}): Promise<{ jobId: string; status?: string; r2Url?: string; cached?: boolean }> {
   const res = await fetch(`${API_BASE}/api/v1/clips/render`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
