@@ -166,10 +166,12 @@
           {isPlaying}
           burnSubtitles={clipStore.burnSubtitles}
           aspectRatio={clipStore.aspectRatio}
-          activeDialogueText={activeTranscriptText}
+          clipStart={clipStore.selectedStart}
+          clipEnd={clipStore.selectedEnd}
           onTogglePlay={() => isPlaying = !isPlaying}
           onToggleSubtitles={() => clipStore.burnSubtitles = !clipStore.burnSubtitles}
           onSeekRelative={handleSeekRelative}
+          onTimeUpdate={(t) => currentTime = t}
         />
       </div>
 

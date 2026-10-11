@@ -27,3 +27,42 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #6D0808;
 }
+
+/* Kinetic Subtitle Animation Presets (Opus/Submagic Style) */
+@keyframes caption-pop {
+  0% { transform: scale(0.92); }
+  50% { transform: scale(1.22); }
+  100% { transform: scale(1.08); }
+}
+
+@keyframes caption-fade {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes caption-rise {
+  0% { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes caption-drop {
+  0% { opacity: 0; transform: translateY(-14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes caption-zoom {
+  0% { opacity: 0.6; transform: scale(0.82); }
+  100% { opacity: 1; transform: scale(1.12); }
+}
+
+@keyframes caption-type {
+  0% { opacity: 0; filter: blur(3px); }
+  100% { opacity: 1; filter: blur(0); }
+}
+
+.anim-pop { animation: caption-pop 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+.anim-fade { animation: caption-fade 0.25s ease-out both; }
+.anim-rise { animation: caption-rise 0.22s cubic-bezier(0, 0, 0.2, 1) both; }
+.anim-drop { animation: caption-drop 0.22s cubic-bezier(0, 0, 0.2, 1) both; }
+.anim-zoom { animation: caption-zoom 0.22s ease-out both; }
+.anim-type { animation: caption-type 0.18s ease-out both; }

@@ -137,6 +137,25 @@
       </div>
     </div>
 
+    <!-- WORDS PER CHUNK (1W, 2W, 3W, 4W) -->
+    <div class="flex flex-col gap-1.5">
+      <div class="flex justify-between items-center text-[11px] font-mono text-[#A9B3A1]">
+        <span class="tracking-wide uppercase">WORDS PER CHUNK</span>
+        <span class="font-bold text-[#D4FF00]">{clipStore.wordsPerChunk} WORDS</span>
+      </div>
+      <div class="grid grid-cols-4 gap-1.5 p-1 bg-[#150000] rounded-xl border border-[#757D6F]/30">
+        {#each [1, 2, 3, 4] as num}
+          <button
+            type="button"
+            onclick={() => clipStore.wordsPerChunk = num}
+            class="py-1 rounded-lg text-xs font-mono font-bold transition {clipStore.wordsPerChunk === num ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+          >
+            {num}W
+          </button>
+        {/each}
+      </div>
+    </div>
+
     <!-- Sliders: Font Size & Position Y -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-[#150000] border border-[#757D6F]/30 rounded-xl">
       <div class="flex flex-col gap-1">

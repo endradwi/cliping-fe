@@ -8,20 +8,24 @@
     isPlaying = false,
     burnSubtitles = true,
     aspectRatio = '9:16',
-    activeDialogueText = '',
+    clipStart = 0,
+    clipEnd = 30,
     onTogglePlay,
     onToggleSubtitles,
-    onSeekRelative
+    onSeekRelative,
+    onTimeUpdate
   }: {
     videoId: string;
     currentTime: number;
     isPlaying: boolean;
     burnSubtitles: boolean;
     aspectRatio: string;
-    activeDialogueText?: string;
+    clipStart?: number;
+    clipEnd?: number;
     onTogglePlay: () => void;
     onToggleSubtitles: () => void;
     onSeekRelative?: (seconds: number) => void;
+    onTimeUpdate?: (time: number) => void;
   } = $props();
 
   let videoElement = $state<HTMLVideoElement | null>(null);
@@ -52,18 +56,63 @@
     }
   });
 
-  // Sync native HTML5 video element with play state & seek
+  // Handle Seek from timeline or controls
   $effect(() => {
     if (videoElement && clipStore.analysisResult?.directVideoUrl) {
-      if (Math.abs(videoElement.currentTime - currentTime) > 1.5) {
+      if (Math.abs(videoElement.currentTime - currentTime) > 0.8) {
         videoElement.currentTime = currentTime;
       }
-      if (isPlaying && videoElement.paused) {
-        videoElement.play().catch(() => {});
-      } else if (!isPlaying && !videoElement.paused) {
+    }
+  });
+
+  // Real-time Playback Loop & Time Tracking
+  $effect(() => {
+    let animId: number | null = null;
+    let timer: any = null;
+
+    if (isPlaying) {
+      if (videoElement && clipStore.analysisResult?.directVideoUrl) {
+        if (videoElement.paused) {
+          videoElement.play().catch(() => {});
+        }
+
+        const tick = () => {
+          if (!videoElement) return;
+          const t = videoElement.currentTime;
+          const endBoundary = clipEnd || clipStore.selectedEnd || 30;
+          const startBoundary = clipStart || clipStore.selectedStart || 0;
+
+          if (t >= endBoundary) {
+            videoElement.currentTime = startBoundary;
+            onTimeUpdate?.(startBoundary);
+          } else {
+            onTimeUpdate?.(t);
+          }
+          animId = requestAnimationFrame(tick);
+        };
+        animId = requestAnimationFrame(tick);
+      } else {
+        // Fallback ticker for YouTube embed preview
+        timer = setInterval(() => {
+          const endBoundary = clipEnd || clipStore.selectedEnd || 30;
+          const startBoundary = clipStart || clipStore.selectedStart || 0;
+          let nextTime = currentTime + 0.1;
+          if (nextTime >= endBoundary) {
+            nextTime = startBoundary;
+          }
+          onTimeUpdate?.(nextTime);
+        }, 100);
+      }
+    } else {
+      if (videoElement && !videoElement.paused) {
         videoElement.pause();
       }
     }
+
+    return () => {
+      if (animId) cancelAnimationFrame(animId);
+      if (timer) clearInterval(timer);
+    };
   });
 
   function formatTime(seconds: number): string {
@@ -73,12 +122,53 @@
     return `${m.toString().padStart(2, '0')}:${remS.toString().padStart(2, '0')}`;
   }
 
-  // Generate words preview based on active dialogue or sample hook
-  const displayWords = $derived.by(() => {
-    if (activeDialogueText && activeDialogueText.trim().length > 0) {
-      return activeDialogueText.trim().split(/\s+/).slice(0, 8);
+  // Find currently spoken transcript line synchronized to exact video timestamp
+  const activeLine = $derived.by(() => {
+    const transcript = clipStore.analysisResult?.transcript || [];
+    return transcript.find(line => {
+      const lineEnd = line.start + (line.duration || 2.5);
+      return currentTime >= line.start && currentTime <= lineEnd;
+    });
+  });
+
+  // Real-time Word-by-Word Karaoke & Chunk Calculation
+  const subtitleState = $derived.by(() => {
+    if (activeLine && activeLine.text) {
+      const words = activeLine.text.trim().split(/\s+/).filter(Boolean);
+      if (words.length > 0) {
+        const lineDuration = Math.max(0.4, activeLine.duration || 2.5);
+        const elapsed = Math.max(0, currentTime - activeLine.start);
+        const progress = Math.min(0.99, elapsed / lineDuration);
+        const currentWordIdx = Math.floor(progress * words.length);
+
+        const chunkSize = Math.max(1, clipStore.wordsPerChunk || 2);
+        const chunkIdx = Math.floor(currentWordIdx / chunkSize);
+        const startIdx = chunkIdx * chunkSize;
+        const chunkWords = words.slice(startIdx, startIdx + chunkSize);
+        const activeInChunk = currentWordIdx - startIdx;
+
+        return {
+          chunkWords,
+          activeInChunk,
+          activeKey: `${activeLine.start}_${currentWordIdx}`
+        };
+      }
     }
-    return ['VIRAL', 'HOOK', 'MOMENT', 'DETECTED'];
+
+    // Fallback display when paused or between spoken sentences
+    const sampleWords = ['VIRAL', 'HOOK', 'CLIP'];
+    return {
+      chunkWords: sampleWords,
+      activeInChunk: 0,
+      activeKey: 'preview_idle'
+    };
+  });
+
+  // Get animation class corresponding to store setting
+  const animationClass = $derived.by(() => {
+    const anim = clipStore.subtitleAnimation || 'POP';
+    if (anim === 'OFF') return '';
+    return `anim-${anim.toLowerCase()}`;
   });
 </script>
 
@@ -109,7 +199,7 @@
       </div>
     {/if}
 
-    <!-- Simulated Kinetic Subtitle Overlay -->
+    <!-- DYNAMIC KINETIC SUBTITLE OVERLAY (Synchronized Word-by-Word with Video) -->
     {#if burnSubtitles && (videoId || clipStore.analysisResult?.directVideoUrl)}
       <div
         class="absolute inset-x-3 text-center pointer-events-none transition-all px-2 z-10"
@@ -118,16 +208,19 @@
         <div
           class="inline-block max-w-full font-black tracking-wide uppercase leading-tight select-none"
           style="
-            font-size: {Math.max(16, Math.min(32, clipStore.subtitleFontSize))}px;
-            filter: {clipStore.subtitleGlow ? `drop-shadow(0 0 14px ${clipStore.subtitleColor}80) drop-shadow(0 4px 6px rgba(0,0,0,0.9))` : 'drop-shadow(0 4px 6px rgba(0,0,0,0.95))'};
+            font-size: {Math.max(16, Math.min(36, clipStore.subtitleFontSize))}px;
+            filter: {clipStore.subtitleGlow ? `drop-shadow(0 0 16px ${clipStore.subtitleColor}90) drop-shadow(0 4px 6px rgba(0,0,0,0.95))` : 'drop-shadow(0 4px 6px rgba(0,0,0,0.98))'};
             text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
           "
         >
-          {#each displayWords as word, idx}
-            {@const isHighlighted = clipStore.highlightedWordIndices.includes(idx)}
+          {#each subtitleState.chunkWords as word, idx (idx)}
+            {@const isActiveWord = idx === subtitleState.activeInChunk}
             <span
-              class="inline-block mx-1 transition-all {clipStore.subtitleAnimation === 'POP' ? 'scale-105' : ''}"
-              style="color: {isHighlighted ? clipStore.subtitleColor : '#FFFFFF'};"
+              class="inline-block mx-1.5 transition-all {isActiveWord ? animationClass : ''}"
+              style="
+                color: {isActiveWord ? clipStore.subtitleColor : '#FFFFFF'};
+                transform-origin: center bottom;
+              "
             >
               {word}
             </span>
@@ -149,7 +242,7 @@
           <RotateCcw size={14} />
         </button>
 
-        <!-- Primary Play/Pause Pill with Electric Lime / Accent -->
+        <!-- Primary Play/Pause Pill with Electric Lime Accent -->
         <button
           type="button"
           onclick={onTogglePlay}
