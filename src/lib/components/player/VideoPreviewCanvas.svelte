@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Play, Pause, RotateCcw, RotateCw, Subtitles, Crop } from 'lucide-svelte';
   import { clipStore } from '../../stores/clip.svelte';
 
   let {
@@ -10,9 +9,6 @@
     aspectRatio = '9:16',
     clipStart = 0,
     clipEnd = 30,
-    onTogglePlay,
-    onToggleSubtitles,
-    onSeekRelative,
     onTimeUpdate
   }: {
     videoId: string;
@@ -22,27 +18,24 @@
     aspectRatio: string;
     clipStart?: number;
     clipEnd?: number;
-    onTogglePlay: () => void;
-    onToggleSubtitles: () => void;
-    onSeekRelative?: (seconds: number) => void;
     onTimeUpdate?: (time: number) => void;
   } = $props();
 
   let videoElement = $state<HTMLVideoElement | null>(null);
   let secondaryVideoElement = $state<HTMLVideoElement | null>(null);
 
-  // Responsive frame dimensions avoiding any column overflow - Elegant Device Scale (Spacious Widescreen Monitor)
+  // Responsive frame dimensions filling the monitor area smoothly (CapCut Studio Style)
   const frameClass = $derived.by(() => {
     switch (aspectRatio) {
       case '16:9':
-        return 'w-full max-w-[560px] aspect-[16/9] max-h-[52vh]';
+        return 'w-full max-w-[620px] aspect-[16/9] max-h-full';
       case '1:1':
-        return 'w-auto h-[46vh] sm:h-[50vh] max-h-[440px] aspect-square';
+        return 'h-full max-h-[50vh] aspect-square';
       case '4:5':
-        return 'w-auto h-[50vh] sm:h-[54vh] max-h-[480px] aspect-[4/5]';
+        return 'h-full max-h-[54vh] aspect-[4/5]';
       case '9:16':
       default:
-        return 'w-auto h-[54vh] sm:h-[58vh] max-h-[530px] aspect-[9/16]';
+        return 'h-full max-h-[58vh] aspect-[9/16]';
     }
   });
 
@@ -132,13 +125,6 @@
     };
   });
 
-  function formatTime(seconds: number): string {
-    const s = Math.max(0, Math.floor(seconds));
-    const m = Math.floor(s / 60);
-    const remS = s % 60;
-    return `${m.toString().padStart(2, '0')}:${remS.toString().padStart(2, '0')}`;
-  }
-
   // Find currently spoken transcript line synchronized to exact video timestamp
   const activeLine = $derived.by(() => {
     const transcript = clipStore.analysisResult?.transcript || [];
@@ -190,10 +176,10 @@
   });
 </script>
 
-<div class="flex flex-col items-center w-full">
-  <!-- Dynamic Phone / Desktop Frame -->
-  <div class="relative {frameClass} bg-[#0c0c0e] rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl flex items-center justify-center group transition-all">
-    <!-- TOP HOOK TITLE OVERLAY (Preset Title like SOCL Visuals) -->
+<div class="h-full w-full flex items-center justify-center p-1">
+  <!-- Dynamic Phone / Desktop Frame (Clean, Unobstructed Video Monitor) -->
+  <div class="relative {frameClass} bg-black rounded-2xl overflow-hidden border border-[#22396f]/40 shadow-2xl flex items-center justify-center group transition-all">
+    <!-- TOP HOOK TITLE OVERLAY (Preset Title) -->
     {#if clipStore.showHookTitle && (clipStore.hookTitleText || clipStore.analysisResult?.title)}
       <div
         class="absolute inset-x-3 text-center pointer-events-none z-20 px-2 transition-all"
@@ -214,38 +200,7 @@
     {/if}
 
     {#if clipStore.analysisResult?.directVideoUrl}
-      {#if clipStore.layoutMode === 'split'}
-        <!-- Podcast Stacked Split-Screen (Top: Host 15%, Bottom: Guest 85%) -->
-        <div class="w-full h-full flex flex-col overflow-hidden">
-          <div class="h-1/2 w-full overflow-hidden relative border-b-2 border-white/20">
-            <video
-              bind:this={videoElement}
-              src={clipStore.analysisResult.directVideoUrl}
-              class="w-full h-full object-cover pointer-events-none"
-              style="object-position: 15% center;"
-              playsinline
-              muted={false}
-            ></video>
-            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-[#fcf1d0]/40 text-[9px] font-mono font-bold text-[#fcf1d0] shadow z-10">
-              HOST (L)
-            </span>
-          </div>
-
-          <div class="h-1/2 w-full overflow-hidden relative">
-            <video
-              bind:this={secondaryVideoElement}
-              src={clipStore.analysisResult.directVideoUrl}
-              class="w-full h-full object-cover pointer-events-none"
-              style="object-position: 85% center;"
-              playsinline
-              muted={true}
-            ></video>
-            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-white/20 text-[9px] font-mono font-bold text-white/90 shadow z-10">
-              GUEST (R)
-            </span>
-          </div>
-        </div>
-      {:else if clipStore.layoutMode === 'fit-blur'}
+      {#if clipStore.layoutMode === 'fit-blur'}
         <!-- Ambient Blurred Background + Sharp Centered Video -->
         <div class="w-full h-full relative overflow-hidden flex items-center justify-center bg-black">
           <video
@@ -275,43 +230,14 @@
         ></video>
       {/if}
     {:else if videoId}
-      {#if clipStore.layoutMode === 'split'}
-        <div class="w-full h-full flex flex-col overflow-hidden">
-          <div class="h-1/2 w-full overflow-hidden relative border-b-2 border-white/20 flex items-center justify-center">
-            <iframe
-              src="https://www.youtube-nocookie.com/embed/{videoId}?start={Math.floor(currentTime)}&autoplay={isPlaying ? 1 : 0}&controls=0&modestbranding=1&rel=0"
-              title="YouTube Preview Host"
-              class="w-[750px] h-[400px] max-w-none pointer-events-none scale-125 object-cover"
-              style="transform: scale(1.2) translateX(25%);"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            ></iframe>
-            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-[#fcf1d0]/40 text-[9px] font-mono font-bold text-[#fcf1d0] z-10">
-              HOST (L)
-            </span>
-          </div>
-          <div class="h-1/2 w-full overflow-hidden relative flex items-center justify-center">
-            <iframe
-              src="https://www.youtube-nocookie.com/embed/{videoId}?start={Math.floor(currentTime)}&autoplay={isPlaying ? 1 : 0}&controls=0&modestbranding=1&rel=0"
-              title="YouTube Preview Guest"
-              class="w-[750px] h-[400px] max-w-none pointer-events-none scale-125 object-cover"
-              style="transform: scale(1.2) translateX(-25%);"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            ></iframe>
-            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-white/20 text-[9px] font-mono font-bold text-white/90 z-10">
-              GUEST (R)
-            </span>
-          </div>
-        </div>
-      {:else}
-        <iframe
-          id="preview-iframe"
-          src="https://www.youtube-nocookie.com/embed/{videoId}?start={Math.floor(currentTime)}&autoplay={isPlaying ? 1 : 0}&controls=0&modestbranding=1&rel=0"
-          title="YouTube Preview"
-          class={iframeClass}
-          style="transform: scale(1.25) translateX({(0.5 - clipStore.panOffset) * 35}%);"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        ></iframe>
-      {/if}
+      <iframe
+        id="preview-iframe"
+        src="https://www.youtube-nocookie.com/embed/{videoId}?start={Math.floor(currentTime)}&autoplay={isPlaying ? 1 : 0}&controls=0&modestbranding=1&rel=0"
+        title="YouTube Preview"
+        class={iframeClass}
+        style="transform: scale(1.25) translateX({(0.5 - clipStore.panOffset) * 35}%);"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      ></iframe>
     {:else}
       <div class="text-[#22396f] text-sm font-mono text-center p-4">
         No video loaded
@@ -374,87 +300,5 @@
         </div>
       </div>
     {/if}
-  </div>
-
-  <!-- DEDICATED TRANSPORT CONTROLS BAR (Placed Below Video - Never Obstructing Footage!) -->
-  <div class="flex items-center justify-center w-full mt-2">
-    <div class="flex items-center gap-1.5 sm:gap-2 px-3 py-1 bg-[#010736] border border-[#22396f]/60 rounded-full text-[#fcf1d0] font-mono text-xs shadow-lg">
-      <!-- Rewind 5s -->
-      <button
-        type="button"
-        onclick={() => onSeekRelative ? onSeekRelative(-5) : null}
-        class="p-1 text-[#8fa2cb] hover:text-[#fcf1d0] transition-colors hover:scale-110 active:scale-95"
-        title="Rewind 5s (J)"
-      >
-        <RotateCcw size={14} />
-      </button>
-
-      <!-- Primary Play/Pause Pill -->
-      <button
-        type="button"
-        onclick={onTogglePlay}
-        class="w-7 h-7 rounded-full bg-[#fcf1d0] text-[#010736] font-bold flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95"
-        title="Play / Pause (Space)"
-      >
-        {#if isPlaying}
-          <Pause size={14} class="fill-[#010736]" />
-        {:else}
-          <Play size={14} class="fill-[#010736] ml-0.5" />
-        {/if}
-      </button>
-
-      <!-- Forward 5s -->
-      <button
-        type="button"
-        onclick={() => onSeekRelative ? onSeekRelative(5) : null}
-        class="p-1 text-[#8fa2cb] hover:text-[#fcf1d0] transition-colors hover:scale-110 active:scale-95"
-        title="Forward 5s (L)"
-      >
-        <RotateCw size={14} />
-      </button>
-
-      <!-- Aspect Ratio switch toggle -->
-      <button
-        type="button"
-        onclick={() => {
-          const ratios: Array<'9:16' | '4:5' | '1:1' | '16:9'> = ['9:16', '4:5', '1:1', '16:9'];
-          const nextIdx = (ratios.indexOf(clipStore.aspectRatio as any) + 1) % ratios.length;
-          clipStore.aspectRatio = ratios[nextIdx];
-        }}
-        class="hidden sm:flex items-center gap-1 px-2 py-0.5 bg-[#0d1c42] hover:bg-[#22396f] border border-[#22396f]/50 rounded-md text-[10px] text-[#fcf1d0] transition hover:scale-105 active:scale-95 font-bold"
-        title="Ubah Rasio Layar"
-      >
-        <Crop size={11} />
-        <span>{aspectRatio}</span>
-      </button>
-
-      <!-- Subtitles Toggle Pill -->
-      <button
-        type="button"
-        onclick={onToggleSubtitles}
-        class="px-2 py-0.5 rounded-md text-[11px] font-bold transition flex items-center gap-1 {burnSubtitles ? 'bg-[#22396f] text-[#fcf1d0] border border-[#fcf1d0]/40' : 'bg-[#010736] text-[#8fa2cb]/60'}"
-        title="Toggle Subtitle"
-      >
-        <Subtitles size={12} />
-        <span>CC</span>
-      </button>
-
-      <!-- Tabular Monospace Time Counter -->
-      <span class="text-[11px] font-mono text-[#fcf1d0]/80 px-1 tracking-tight">
-        {formatTime(currentTime)} / {formatTime(clipStore.selectedDuration)}
-      </span>
-    </div>
-  </div>
-
-  <!-- Keyboard Shortcuts Cheat-Sheet -->
-  <div class="flex items-center gap-2 mt-2 text-[10px] font-mono text-[#22396f] flex-wrap justify-center">
-    <span class="px-1.5 py-0.5 bg-[#0d1c42] border border-[#22396f]/30 rounded text-[#fcf1d0]">Space</span>
-    <span>Play</span>
-    <span>•</span>
-    <span class="px-1.5 py-0.5 bg-[#0d1c42] border border-[#22396f]/30 rounded text-[#fcf1d0]">I / O</span>
-    <span>In/Out</span>
-    <span>•</span>
-    <span class="px-1.5 py-0.5 bg-[#0d1c42] border border-[#22396f]/30 rounded text-[#fcf1d0]">J / L</span>
-    <span>±5s</span>
   </div>
 </div>

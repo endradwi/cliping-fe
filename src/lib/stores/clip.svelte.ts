@@ -25,11 +25,11 @@ class ClipStudioStore {
   // Toggles
   burnSubtitles = $state<boolean>(true);
   aspectRatio = $state<'9:16' | '1:1' | '16:9' | '4:5'>('9:16');
-  layoutMode = $state<'single' | 'split' | 'fit-blur'>('single');
+  layoutMode = $state<'single' | 'fit-blur'>('single');
   panOffset = $state<number>(0.5); // 0.0 = Left/Host, 0.5 = Center, 1.0 = Right/Guest
 
   // Subtitle / Caption Mood Styling (Modern Opus/Submagic Style)
-  subtitleColor = $state<string>('#fcf1d0'); // Electric Neon Lime default
+  subtitleColor = $state<string>('#FFE600'); // Cyber Gold default highlight
   subtitleAnimation = $state<SubtitleAnimation>('POP');
   subtitleGlow = $state<boolean>(true);
   subtitleFontSize = $state<number>(28);
