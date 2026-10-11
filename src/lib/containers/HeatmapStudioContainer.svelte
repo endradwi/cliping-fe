@@ -6,11 +6,11 @@
   import CaptionMoodPanel from '../components/caption/CaptionMoodPanel.svelte';
   import { triggerRenderClip } from '../services/api.client';
   import type { CandidateClip } from '../types';
-  import { Layers, ArrowRight, Sparkles, Film, Crop, Check } from 'lucide-svelte';
+  import { Film, SlidersHorizontal, Flame } from 'lucide-svelte';
 
   let currentTime = $state(0);
   let isPlaying = $state(false);
-  let activeTab = $state<'caption' | 'clips' | 'format'>('caption');
+  let activeTab = $state<'editor' | 'gallery'>('editor');
 
   // Compute live spoken dialogue transcript for the active clip range
   let activeTranscriptLines = $derived.by(() => {
@@ -82,7 +82,9 @@
         layout: clipStore.layoutMode,
         panOffset: clipStore.panOffset,
         burnSubtitles: clipStore.burnSubtitles,
-        title: clipStore.analysisResult.title
+        title: clipStore.analysisResult.title,
+        hookTitle: clipStore.showHookTitle ? (clipStore.hookTitleText || clipStore.analysisResult.title) : undefined,
+        hookTitleTheme: clipStore.hookTitleTheme
       });
       clipStore.activeJobId = res.jobId;
       if (res.cached && res.r2Url) {
@@ -108,262 +110,156 @@
       clipStore.renderProgress = null;
     }
   }
-
-  const aspectRatios = [
-    { id: '9:16' as const, label: '9:16', desc: 'Shorts / TikTok / Reels' },
-    { id: '4:5' as const, label: '4:5', desc: 'Instagram Portrait Feed' },
-    { id: '1:1' as const, label: '1:1', desc: 'Square Post / Carousel' },
-    { id: '16:9' as const, label: '16:9', desc: 'YouTube Standard Landscape' }
-  ];
 </script>
 
 <svelte:window onkeydown={handleKeyDown} />
 
 {#if clipStore.analysisResult}
   <div class="w-full max-w-6xl mx-auto flex flex-col gap-4">
-    <!-- Top Minimalist Breadcrumb Bar -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-[#200202]/70 border border-[#757D6F]/25 rounded-2xl backdrop-blur-md font-mono text-xs shadow-lg">
-      <div class="flex items-center gap-2.5 min-w-0 flex-1">
-        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#150000] border border-[#D4FF00]/40 text-[#D4FF00] font-bold text-[10px]">
-          <span class="w-1.5 h-1.5 rounded-full bg-[#D4FF00]"></span>
-          <span>READY</span>
-        </span>
-        <span class="text-[#EEEAD7] font-bold truncate max-w-md">{clipStore.analysisResult.title}</span>
-        <span class="text-[#757D6F] hidden md:inline truncate">({clipStore.analysisResult.channel})</span>
+    <!-- Top Minimalist Studio Header & Clip Switcher Strip -->
+    <div class="flex flex-col gap-2.5 p-3.5 bg-[#200202]/70 border border-[#757D6F]/25 rounded-2xl backdrop-blur-md font-mono text-xs shadow-lg">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#150000] border border-[#D4FF00]/40 text-[#D4FF00] font-bold text-[10px]">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#D4FF00]"></span>
+            <span>READY</span>
+          </span>
+          <span class="text-[#EEEAD7] font-bold truncate max-w-md">{clipStore.analysisResult.title}</span>
+        </div>
+
+        <!-- Studio Mode Selector -->
+        <div class="flex items-center gap-1.5 p-1 bg-[#150000] border border-[#757D6F]/25 rounded-xl self-stretch sm:self-auto">
+          <button
+            type="button"
+            onclick={() => activeTab = 'editor'}
+            class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {activeTab === 'editor' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+          >
+            <SlidersHorizontal size={13} />
+            <span>Editor Studio</span>
+          </button>
+          <button
+            type="button"
+            onclick={() => activeTab = 'gallery'}
+            class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {activeTab === 'gallery' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+          >
+            <Film size={13} />
+            <span>Semua Klip ({clipStore.analysisResult.topClips.length})</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Quick Batch Navigation -->
-      <div class="flex items-center gap-1.5 p-1 bg-[#150000] border border-[#757D6F]/25 rounded-xl self-stretch sm:self-auto">
-        <div class="flex items-center gap-1 px-1.5 text-[11px] text-[#A9B3A1]">
-          <Layers size={13} class="text-[#EEEAD7]" />
-          <span>BATCH:</span>
-        </div>
-        {#each Array.from({ length: clipStore.totalBatches }, (_, i) => i + 1) as b}
+      <!-- Quick One-Click Clip Selector Strip (SOCL Visuals Style) -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 border-t border-[#757D6F]/15">
+        <span class="text-[10px] text-[#A9B3A1] font-bold flex-shrink-0 flex items-center gap-1">
+          <Flame size={12} class="text-[#D4FF00]" />
+          <span>PILIH KLIP:</span>
+        </span>
+        {#each clipStore.analysisResult.topClips as clip}
+          {@const isActive = clip.rank === clipStore.activeClipRank}
           <button
             type="button"
-            onclick={() => {
-              clipStore.setBatch(b);
-              currentTime = clipStore.selectedStart;
-            }}
-            class="px-2 py-0.5 rounded-lg text-xs transition {clipStore.currentBatch === b ? 'bg-[#D4FF00] text-black font-bold shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+            onclick={() => handleSelectClip(clip)}
+            class="px-2.5 py-1 rounded-lg text-[10px] font-bold flex-shrink-0 transition border flex items-center gap-1.5 {isActive ? 'bg-[#D4FF00] text-black border-[#D4FF00] shadow-md scale-105' : 'bg-[#150000] text-[#A9B3A1] hover:text-[#EEEAD7] border-[#757D6F]/30 hover:border-[#757D6F]/60'}"
           >
-            {b}
+            <span>#{clip.rank}</span>
+            <span class="opacity-80">({clip.score})</span>
+            {#if clip.category}
+              <span class="text-[8px] px-1 py-0.2 rounded {isActive ? 'bg-black text-[#D4FF00]' : 'bg-[#2D0000] text-white/80'} font-mono">
+                {clip.category}
+              </span>
+            {/if}
           </button>
         {/each}
-        {#if clipStore.totalBatches > 1}
-          <button
-            type="button"
-            onclick={() => {
-              clipStore.nextBatch();
-              currentTime = clipStore.selectedStart;
-            }}
-            class="p-1 rounded-lg text-[#EEEAD7] hover:bg-[#2D0000] transition"
-            title="Next Batch"
-          >
-            <ArrowRight size={13} />
-          </button>
-        {/if}
       </div>
     </div>
 
-    <!-- MAIN TWO-COLUMN STUDIO WORKSPACE (Balanced Widescreen Layout) -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-      <!-- LEFT STAGE: Video Canvas & Attached Timeline (lg:col-span-5) -->
-      <div class="lg:col-span-5 flex flex-col items-center gap-3 p-3.5 sm:p-4 bg-[#200202]/80 border border-[#757D6F]/25 rounded-2xl shadow-xl w-full">
-        <!-- Sleek Phone Canvas -->
-        <div class="w-full flex justify-center">
-          <VideoPreviewCanvas
-            videoId={clipStore.analysisResult.videoId}
-            {currentTime}
-            {isPlaying}
-            burnSubtitles={clipStore.burnSubtitles}
-            aspectRatio={clipStore.aspectRatio}
-            clipStart={clipStore.selectedStart}
-            clipEnd={clipStore.selectedEnd}
-            onTogglePlay={() => isPlaying = !isPlaying}
-            onToggleSubtitles={() => clipStore.burnSubtitles = !clipStore.burnSubtitles}
-            onSeekRelative={handleSeekRelative}
-            onTimeUpdate={(t) => currentTime = t}
-          />
-        </div>
-
-        <!-- Attached In/Out Range Trimmer Bar -->
-        <div class="w-full flex flex-col gap-2 p-2.5 bg-[#150000] border border-[#757D6F]/25 rounded-xl font-mono text-[11px]">
-          <div class="flex items-center justify-between text-[#A9B3A1]">
-            <div class="flex items-center gap-1.5">
-              <span class="text-[#757D6F]">TRIM:</span>
-              <span class="text-[#D4FF00] font-bold">{clipStore.selectedStart.toFixed(1)}s</span>
-              <span>➔</span>
-              <span class="text-[#D4FF00] font-bold">{clipStore.selectedEnd.toFixed(1)}s</span>
-            </div>
-            <span class="px-1.5 py-0.2 rounded bg-[#2D0000] text-[#EEEAD7] font-bold border border-[#757D6F]/30 text-[10px]">
-              {clipStore.selectedDuration.toFixed(1)}s DURATION
-            </span>
+    {#if activeTab === 'editor'}
+      <!-- MAIN TWO-COLUMN STUDIO WORKSPACE (Spacious SOCL Visuals Layout) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- LEFT COLUMN: Sticky Stage (Canvas & Timeline) -->
+        <div class="lg:col-span-5 flex flex-col items-center gap-3 p-3.5 sm:p-4 bg-[#200202]/80 border border-[#757D6F]/25 rounded-2xl shadow-xl w-full sticky top-16">
+          <!-- Video Preview Canvas -->
+          <div class="w-full flex justify-center">
+            <VideoPreviewCanvas
+              videoId={clipStore.analysisResult.videoId}
+              {currentTime}
+              {isPlaying}
+              burnSubtitles={clipStore.burnSubtitles}
+              aspectRatio={clipStore.aspectRatio}
+              clipStart={clipStore.selectedStart}
+              clipEnd={clipStore.selectedEnd}
+              onTogglePlay={() => isPlaying = !isPlaying}
+              onToggleSubtitles={() => clipStore.burnSubtitles = !clipStore.burnSubtitles}
+              onSeekRelative={handleSeekRelative}
+              onTimeUpdate={(t) => currentTime = t}
+            />
           </div>
 
-          <!-- Micro Trim Adjusters -->
-          <div class="grid grid-cols-2 gap-2 text-[10px]">
-            <div class="flex items-center justify-between px-2 py-1 bg-[#200202] rounded-lg border border-[#757D6F]/20">
-              <span class="text-[#757D6F]">START</span>
-              <div class="flex gap-1">
-                <button type="button" onclick={() => adjustInPoint(-1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
-                <button type="button" onclick={() => adjustInPoint(1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
+          <!-- Precision Trimmer Bar -->
+          <div class="w-full flex flex-col gap-2 p-2.5 bg-[#150000] border border-[#757D6F]/25 rounded-xl font-mono text-[11px]">
+            <div class="flex items-center justify-between text-[#A9B3A1]">
+              <div class="flex items-center gap-1.5">
+                <span class="text-[#757D6F]">RENTANG:</span>
+                <span class="text-[#D4FF00] font-bold">{clipStore.selectedStart.toFixed(1)}s</span>
+                <span>➔</span>
+                <span class="text-[#D4FF00] font-bold">{clipStore.selectedEnd.toFixed(1)}s</span>
               </div>
+              <span class="px-1.5 py-0.2 rounded bg-[#2D0000] text-[#EEEAD7] font-bold border border-[#757D6F]/30 text-[10px]">
+                {clipStore.selectedDuration.toFixed(1)}s DURASI
+              </span>
             </div>
-            <div class="flex items-center justify-between px-2 py-1 bg-[#200202] rounded-lg border border-[#757D6F]/20">
-              <span class="text-[#757D6F]">END</span>
-              <div class="flex gap-1">
-                <button type="button" onclick={() => adjustOutPoint(-1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
-                <button type="button" onclick={() => adjustOutPoint(1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
+
+            <!-- Micro Trim Adjusters -->
+            <div class="grid grid-cols-2 gap-2 text-[10px]">
+              <div class="flex items-center justify-between px-2 py-1 bg-[#200202] rounded-lg border border-[#757D6F]/20">
+                <span class="text-[#757D6F]">START</span>
+                <div class="flex gap-1">
+                  <button type="button" onclick={() => adjustInPoint(-1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
+                  <button type="button" onclick={() => adjustInPoint(1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
+                </div>
+              </div>
+              <div class="flex items-center justify-between px-2 py-1 bg-[#200202] rounded-lg border border-[#757D6F]/20">
+                <span class="text-[#757D6F]">END</span>
+                <div class="flex gap-1">
+                  <button type="button" onclick={() => adjustOutPoint(-1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
+                  <button type="button" onclick={() => adjustOutPoint(1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Heatmap Timeline -->
+          <div class="w-full">
+            <HeatmapCurve
+              points={clipStore.analysisResult.heatmapPoints}
+              duration={clipStore.analysisResult.duration}
+              {currentTime}
+              selectedStart={clipStore.selectedStart}
+              selectedEnd={clipStore.selectedEnd}
+              topClips={clipStore.currentBatchClips}
+              onSeek={(t) => currentTime = t}
+            />
+          </div>
         </div>
 
-        <!-- Attached Heatmap Retention Timeline Track -->
-        <div class="w-full">
-          <HeatmapCurve
-            points={clipStore.analysisResult.heatmapPoints}
-            duration={clipStore.analysisResult.duration}
-            {currentTime}
-            selectedStart={clipStore.selectedStart}
-            selectedEnd={clipStore.selectedEnd}
-            topClips={clipStore.currentBatchClips}
-            onSeek={(t) => currentTime = t}
-          />
-        </div>
-      </div>
-
-      <!-- RIGHT STAGE: Inspector & Studio Controls (lg:col-span-7) -->
-      <div class="lg:col-span-7 flex flex-col gap-3 w-full">
-        <!-- Studio Tab Switchers -->
-        <div class="grid grid-cols-3 p-1 bg-[#150000] border border-[#757D6F]/30 rounded-2xl font-mono text-xs shadow-lg">
-          <button
-            type="button"
-            onclick={() => activeTab = 'caption'}
-            class="py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 {activeTab === 'caption' ? 'bg-[#D4FF00] text-black font-bold shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
-          >
-            <Sparkles size={14} />
-            <span>Caption Mood</span>
-          </button>
-
-          <button
-            type="button"
-            onclick={() => activeTab = 'clips'}
-            class="py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 {activeTab === 'clips' ? 'bg-[#D4FF00] text-black font-bold shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
-          >
-            <Film size={14} />
-            <span>Clips ({clipStore.analysisResult.topClips.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onclick={() => activeTab = 'format'}
-            class="py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 {activeTab === 'format' ? 'bg-[#D4FF00] text-black font-bold shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
-          >
-            <Crop size={14} />
-            <span>Format ({clipStore.aspectRatio})</span>
-          </button>
-        </div>
-
-        <!-- Tab 1: Caption Mood Studio -->
-        {#if activeTab === 'caption'}
+        <!-- RIGHT COLUMN: Inspector Studio Controls -->
+        <div class="lg:col-span-7 flex flex-col gap-4 w-full">
           <CaptionMoodPanel
             {activeTranscriptText}
             onRender={handleExport}
           />
-
-        <!-- Tab 2: Detected Clips & Bulk Export -->
-        {:else if activeTab === 'clips'}
-          <div class="flex flex-col gap-3">
-            <ClipCarouselTray
-              onSelectClip={handleSelectClip}
-            />
-          </div>
-
-        <!-- Tab 3: Aspect Ratio & Canvas Format -->
-        {:else if activeTab === 'format'}
-          <div class="p-5 bg-[#200202]/80 border border-[#757D6F]/30 rounded-2xl backdrop-blur-md shadow-xl flex flex-col gap-4 text-[#EEEAD7]">
-            <div class="flex items-center justify-between pb-3 border-b border-[#757D6F]/20">
-              <span class="text-xs font-mono font-bold tracking-wider uppercase">PODCAST FRAMING & CANVAS FORMAT</span>
-              <span class="text-xs font-mono text-[#D4FF00] font-bold">{clipStore.aspectRatio} • {clipStore.layoutMode.toUpperCase()}</span>
-            </div>
-
-            <!-- Podcast Framing Mode -->
-            <div class="flex flex-col gap-2">
-              <span class="text-[11px] font-mono text-[#A9B3A1] tracking-wide uppercase">FRAMING PRESET</span>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <button
-                  type="button"
-                  onclick={() => clipStore.layoutMode = 'single'}
-                  class="p-3 rounded-xl text-left font-mono transition-all border flex flex-col justify-between gap-1 {clipStore.layoutMode === 'single' ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] shadow-lg' : 'bg-[#150000] border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
-                >
-                  <div class="flex items-center justify-between w-full">
-                    <span class="text-xs font-bold">📱 Single Camera</span>
-                    {#if clipStore.layoutMode === 'single'}<Check size={14} class="text-[#D4FF00]" />{/if}
-                  </div>
-                  <span class="text-[10px] opacity-75">1 person or custom horizontal pan focus</span>
-                </button>
-
-                <button
-                  type="button"
-                  onclick={() => clipStore.layoutMode = 'split'}
-                  class="p-3 rounded-xl text-left font-mono transition-all border flex flex-col justify-between gap-1 {clipStore.layoutMode === 'split' ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] shadow-lg' : 'bg-[#150000] border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
-                >
-                  <div class="flex items-center justify-between w-full">
-                    <span class="text-xs font-bold">🎙️ Split-Screen</span>
-                    {#if clipStore.layoutMode === 'split'}<Check size={14} class="text-[#D4FF00]" />{/if}
-                  </div>
-                  <span class="text-[10px] opacity-75">Host top 50%, Guest bottom 50%</span>
-                </button>
-
-                <button
-                  type="button"
-                  onclick={() => clipStore.layoutMode = 'fit-blur'}
-                  class="p-3 rounded-xl text-left font-mono transition-all border flex flex-col justify-between gap-1 {clipStore.layoutMode === 'fit-blur' ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] shadow-lg' : 'bg-[#150000] border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
-                >
-                  <div class="flex items-center justify-between w-full">
-                    <span class="text-xs font-bold">🌫️ Fit Blur</span>
-                    {#if clipStore.layoutMode === 'fit-blur'}<Check size={14} class="text-[#D4FF00]" />{/if}
-                  </div>
-                  <span class="text-[10px] opacity-75">Full video with ambient background blur</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Aspect Ratio Grid -->
-            <div class="flex flex-col gap-2 pt-2 border-t border-white/5">
-              <span class="text-[11px] font-mono text-[#A9B3A1] tracking-wide uppercase">ASPECT RATIO</span>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {#each aspectRatios as fmt}
-                  <button
-                    type="button"
-                    onclick={() => clipStore.aspectRatio = fmt.id}
-                    class="p-3 rounded-xl text-left font-mono transition-all border flex flex-col justify-between gap-1 {clipStore.aspectRatio === fmt.id ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] shadow-lg scale-[1.02]' : 'bg-[#150000] border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
-                  >
-                    <div class="flex items-center justify-between w-full">
-                      <span class="text-xs font-bold">{fmt.label}</span>
-                      {#if clipStore.aspectRatio === fmt.id}
-                        <Check size={14} class="text-[#D4FF00]" />
-                      {/if}
-                    </div>
-                    <span class="text-[10px] opacity-75 truncate">{fmt.desc}</span>
-                  </button>
-                {/each}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              disabled={clipStore.isRendering}
-              onclick={handleExport}
-              class="w-full mt-2 py-3 px-4 rounded-xl font-bold font-mono text-sm tracking-wide flex items-center justify-center gap-2 transition shadow-xl bg-[#D4FF00] hover:bg-[#c7f000] text-black active:scale-[0.99] disabled:opacity-50"
-            >
-              <span>⬇ Render Clip ({clipStore.aspectRatio} • {clipStore.layoutMode.toUpperCase()})</span>
-            </button>
-          </div>
-        {/if}
+        </div>
       </div>
-    </div>
+    {:else}
+      <!-- ALL CLIPS GALLERY & BULK EXPORT VIEW -->
+      <div class="flex flex-col gap-4">
+        <ClipCarouselTray
+          onSelectClip={(c) => {
+            handleSelectClip(c);
+            activeTab = 'editor';
+          }}
+        />
+      </div>
+    {/if}
   </div>
 {/if}

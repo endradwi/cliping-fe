@@ -55,7 +55,9 @@
             layout: clipStore.layoutMode,
             panOffset: clipStore.panOffset,
             burnSubtitles: clipStore.burnSubtitles,
-            title: `${clipStore.analysisResult?.title || 'Clip'} #${clip.rank}`
+            title: `${clipStore.analysisResult?.title || 'Clip'} #${clip.rank}`,
+            hookTitle: clipStore.showHookTitle ? (clip.label || clipStore.hookTitleText) : undefined,
+            hookTitleTheme: clipStore.hookTitleTheme
           });
 
           jobId = res.jobId;

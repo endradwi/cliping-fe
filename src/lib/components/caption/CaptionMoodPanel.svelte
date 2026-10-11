@@ -1,6 +1,6 @@
 <script lang="ts">
   import { clipStore, type SubtitleAnimation } from '../../stores/clip.svelte';
-  import { Sparkles, Crop, Flame, Layers, Download, Check } from 'lucide-svelte';
+  import { Sparkles, Crop, Film, Type, Sliders, Download, Check } from 'lucide-svelte';
 
   let {
     activeTranscriptText = '',
@@ -24,208 +24,293 @@
     { label: 'Sunset Orange', color: '#FF6B00' },
     { label: 'Hot Pink', color: '#FF2A85' },
     { label: 'Ice Cyan', color: '#00F0FF' },
-    { label: 'Emerald Green', color: '#10B981' },
-    { label: 'Soft Cream', color: '#EEEAD7' }
+    { label: 'Emerald Green', color: '#10B981' }
   ];
 
   const animationList: SubtitleAnimation[] = [
     'POP', 'FADE', 'RISE', 'DROP', 'ZOOM', 'TYPE', 'OFF'
   ];
+
+  const hookThemes = [
+    { id: 'yellow' as const, label: 'Kuning Box', class: 'bg-[#FFE600] text-black border-black/20' },
+    { id: 'red' as const, label: 'Merah Bold', class: 'bg-[#FF1E1E] text-white border-white/20' },
+    { id: 'neon' as const, label: 'Neon Lime', class: 'bg-[#D4FF00] text-black border-black/20' },
+    { id: 'dark' as const, label: 'Dark Minimal', class: 'bg-black/90 text-white border-white/30' }
+  ];
 </script>
 
-<div class="flex flex-col gap-4 p-4 sm:p-5 bg-[#200202]/80 border border-[#757D6F]/30 rounded-2xl backdrop-blur-md shadow-xl text-[#EEEAD7]">
-  <!-- Header: CAPTION MOOD -->
-  <div class="flex items-center justify-between pb-3 border-b border-[#757D6F]/20">
-    <div class="flex items-center gap-2">
-      <div class="w-2.5 h-2.5 rounded-full bg-[#D4FF00] animate-pulse"></div>
-      <span class="text-xs font-mono font-bold tracking-wider text-[#EEEAD7] uppercase">STYLE & FORMAT STUDIO</span>
-      <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#150000] text-[#A9B3A1] border border-[#757D6F]/30">PRESETS</span>
-    </div>
-    <span class="text-[11px] font-mono text-[#D4FF00] font-bold">● LIVE PREVIEW</span>
-  </div>
-
-  <!-- VIDEO FORMAT & ASPECT RATIO SELECTOR -->
-  <div class="flex flex-col gap-1.5 p-3 bg-[#150000] border border-[#757D6F]/30 rounded-xl">
-    <div class="flex justify-between items-center text-[11px] font-mono text-[#A9B3A1]">
-      <span class="flex items-center gap-1.5">
-        <Crop size={14} class="text-[#D4FF00]" />
-        <span>VIDEO FORMAT & ASPECT RATIO</span>
+<div class="flex flex-col gap-4 text-[#EEEAD7]">
+  <!-- SECTION 1: PODCAST FRAMING & TATA LETAK -->
+  <div class="p-4 bg-[#200202]/80 border border-[#757D6F]/30 rounded-2xl backdrop-blur-md shadow-lg flex flex-col gap-3">
+    <div class="flex items-center justify-between pb-2 border-b border-[#757D6F]/20 text-[11px] font-mono">
+      <span class="font-bold text-[#EEEAD7] flex items-center gap-1.5 uppercase">
+        <Film size={14} class="text-[#D4FF00]" />
+        <span>1. FRAMING & FORMAT VIDEO</span>
       </span>
-      <span class="font-bold text-[#D4FF00]">{clipStore.aspectRatio}</span>
+      <span class="text-[#D4FF00] font-bold">{clipStore.aspectRatio} • {clipStore.layoutMode.toUpperCase()}</span>
     </div>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-1">
+
+    <!-- 3 Quick Layout Cards -->
+    <div class="grid grid-cols-3 gap-2">
+      <button
+        type="button"
+        onclick={() => clipStore.layoutMode = 'single'}
+        class="p-2.5 rounded-xl text-left font-mono transition-all border flex flex-col justify-between {clipStore.layoutMode === 'single' ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] shadow-lg' : 'bg-[#150000] border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+      >
+        <span class="text-xs font-bold">📱 Single</span>
+        <span class="text-[9px] opacity-75 mt-0.5">1 Kamera</span>
+      </button>
+
+      <button
+        type="button"
+        onclick={() => clipStore.layoutMode = 'split'}
+        class="p-2.5 rounded-xl text-left font-mono transition-all border flex flex-col justify-between {clipStore.layoutMode === 'split' ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] shadow-lg' : 'bg-[#150000] border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+        title="Podcast Split 50/50"
+      >
+        <span class="text-xs font-bold">🎙️ Split 50/50</span>
+        <span class="text-[9px] opacity-75 mt-0.5">Host & Guest</span>
+      </button>
+
+      <button
+        type="button"
+        onclick={() => clipStore.layoutMode = 'fit-blur'}
+        class="p-2.5 rounded-xl text-left font-mono transition-all border flex flex-col justify-between {clipStore.layoutMode === 'fit-blur' ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] shadow-lg' : 'bg-[#150000] border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+        title="Full video dengan blur background"
+      >
+        <span class="text-xs font-bold">🌫️ Fit Blur</span>
+        <span class="text-[9px] opacity-75 mt-0.5">Latar Blur</span>
+      </button>
+    </div>
+
+    <!-- If Single Mode: Presets Host/Center/Guest & Pan Slider -->
+    {#if clipStore.layoutMode === 'single'}
+      <div class="flex flex-col gap-2 p-2.5 bg-[#150000] rounded-xl border border-[#757D6F]/20 font-mono text-[11px]">
+        <div class="flex items-center justify-between">
+          <span class="text-[#A9B3A1]">FOKUS KAMERA:</span>
+          <div class="flex items-center gap-1">
+            <button
+              type="button"
+              onclick={() => clipStore.panOffset = 0.15}
+              class="px-2 py-0.5 rounded text-[10px] font-bold border transition {Math.abs(clipStore.panOffset - 0.15) < 0.05 ? 'bg-[#D4FF00] text-black border-[#D4FF00]' : 'bg-[#2D0000] text-[#A9B3A1] border-[#757D6F]/30'}"
+            >
+              👈 Host (Kiri)
+            </button>
+            <button
+              type="button"
+              onclick={() => clipStore.panOffset = 0.5}
+              class="px-2 py-0.5 rounded text-[10px] font-bold border transition {Math.abs(clipStore.panOffset - 0.5) < 0.05 ? 'bg-[#D4FF00] text-black border-[#D4FF00]' : 'bg-[#2D0000] text-[#A9B3A1] border-[#757D6F]/30'}"
+            >
+              🎯 Tengah
+            </button>
+            <button
+              type="button"
+              onclick={() => clipStore.panOffset = 0.85}
+              class="px-2 py-0.5 rounded text-[10px] font-bold border transition {Math.abs(clipStore.panOffset - 0.85) < 0.05 ? 'bg-[#D4FF00] text-black border-[#D4FF00]' : 'bg-[#2D0000] text-[#A9B3A1] border-[#757D6F]/30'}"
+            >
+              👉 Guest (Kanan)
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-[9px] text-[#757D6F]">L</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            bind:value={clipStore.panOffset}
+            class="accent-[#D4FF00] h-1.5 w-full bg-[#2D0000] rounded-lg cursor-pointer"
+          />
+          <span class="text-[9px] text-[#757D6F]">R</span>
+          <span class="text-[10px] text-[#D4FF00] font-bold w-9 text-right font-mono">
+            {Math.round(clipStore.panOffset * 100)}%
+          </span>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Aspect Ratio Pills -->
+    <div class="grid grid-cols-4 gap-1.5 pt-1">
       {#each aspectRatios as fmt}
         <button
           type="button"
           onclick={() => clipStore.aspectRatio = fmt.id}
-          class="p-2 rounded-xl text-left font-mono transition-all border flex flex-col justify-between {clipStore.aspectRatio === fmt.id ? 'bg-[#6D0808] border-[#870E0E] text-[#EEEAD7] shadow-lg shadow-black/60 scale-[1.02]' : 'bg-[#2D0000]/60 border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+          class="py-1.5 px-2 rounded-lg text-center font-mono text-[11px] transition border {clipStore.aspectRatio === fmt.id ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] font-bold' : 'bg-[#150000] border-[#757D6F]/20 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
         >
-          <div class="flex items-center justify-between w-full">
-            <span class="text-xs font-bold">{fmt.label}</span>
-            {#if clipStore.aspectRatio === fmt.id}
-              <Check size={13} class="text-[#D4FF00]" />
-            {/if}
-          </div>
-          <span class="text-[9px] opacity-75 mt-0.5 truncate">{fmt.desc}</span>
+          {fmt.label}
         </button>
       {/each}
     </div>
   </div>
 
-  <!-- Segmented Pill: BURN SUBTITLES INTO CLIP -->
-  <div class="flex flex-col gap-1.5">
-    <div class="flex justify-between items-center text-[11px] font-mono text-[#A9B3A1]">
-      <span class="tracking-wide uppercase">BURN SUBTITLES INTO CLIP</span>
-      <span class="font-bold {clipStore.burnSubtitles ? 'text-[#D4FF00]' : 'text-[#757D6F]'}">
-        {clipStore.burnSubtitles ? 'ON' : 'OFF'}
+  <!-- SECTION 2: JUDUL HOOK ATAS (SOCL Visuals Style) -->
+  <div class="p-4 bg-[#200202]/80 border border-[#757D6F]/30 rounded-2xl backdrop-blur-md shadow-lg flex flex-col gap-3 font-mono">
+    <div class="flex items-center justify-between pb-2 border-b border-[#757D6F]/20 text-[11px]">
+      <span class="font-bold text-[#EEEAD7] flex items-center gap-1.5 uppercase">
+        <Type size={14} class="text-[#D4FF00]" />
+        <span>2. JUDUL HOOK ATAS</span>
       </span>
-    </div>
-    <div class="grid grid-cols-2 p-1 bg-[#150000] rounded-xl border border-[#757D6F]/30">
       <button
         type="button"
-        onclick={() => clipStore.burnSubtitles = true}
-        class="py-1.5 rounded-lg text-xs font-mono font-bold transition {clipStore.burnSubtitles ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+        onclick={() => clipStore.showHookTitle = !clipStore.showHookTitle}
+        class="px-2 py-0.5 rounded text-[10px] font-bold transition {clipStore.showHookTitle ? 'bg-[#D4FF00] text-black' : 'bg-[#150000] text-[#757D6F] border border-[#757D6F]/30'}"
       >
-        ON
-      </button>
-      <button
-        type="button"
-        onclick={() => clipStore.burnSubtitles = false}
-        class="py-1.5 rounded-lg text-xs font-mono font-bold transition {!clipStore.burnSubtitles ? 'bg-[#6D0808] text-[#EEEAD7] shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
-      >
-        OFF
+        {clipStore.showHookTitle ? 'AKTIF' : 'NONAKTIF'}
       </button>
     </div>
+
+    {#if clipStore.showHookTitle}
+      <div class="flex flex-col gap-2">
+        <input
+          type="text"
+          placeholder="Tulis hook pembuka video di sini..."
+          bind:value={clipStore.hookTitleText}
+          class="w-full px-3 py-2 bg-[#150000] border border-[#757D6F]/40 rounded-xl text-xs font-bold text-[#EEEAD7] placeholder-[#757D6F] focus:border-[#D4FF00] focus:outline-none"
+        />
+
+        <div class="grid grid-cols-4 gap-1.5">
+          {#each hookThemes as theme}
+            <button
+              type="button"
+              onclick={() => clipStore.hookTitleTheme = theme.id}
+              class="py-1 px-1.5 rounded-lg text-[10px] font-bold border transition text-center truncate {clipStore.hookTitleTheme === theme.id ? 'ring-2 ring-[#D4FF00] scale-[1.02]' : 'opacity-80 hover:opacity-100'} {theme.class}"
+            >
+              {theme.label}
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
   </div>
 
-  {#if clipStore.burnSubtitles}
-    <!-- Subtitle Style (Color Swatches) -->
-    <div class="flex flex-col gap-2">
-      <span class="text-[11px] font-mono text-[#A9B3A1] tracking-wide uppercase">
-        SUBTITLE STYLE (PALETTE)
+  <!-- SECTION 3: SUBTITLE & CAPTION MOOD -->
+  <div class="p-4 bg-[#200202]/80 border border-[#757D6F]/30 rounded-2xl backdrop-blur-md shadow-lg flex flex-col gap-3 font-mono">
+    <div class="flex items-center justify-between pb-2 border-b border-[#757D6F]/20 text-[11px]">
+      <span class="font-bold text-[#EEEAD7] flex items-center gap-1.5 uppercase">
+        <Sparkles size={14} class="text-[#D4FF00]" />
+        <span>3. STYLE & ANIMASI SUBTITLE</span>
       </span>
-      <div class="flex items-center gap-2 overflow-x-auto pb-1">
-        {#each colorPalette as item}
+      <button
+        type="button"
+        onclick={() => clipStore.burnSubtitles = !clipStore.burnSubtitles}
+        class="px-2 py-0.5 rounded text-[10px] font-bold transition {clipStore.burnSubtitles ? 'bg-[#D4FF00] text-black' : 'bg-[#150000] text-[#757D6F] border border-[#757D6F]/30'}"
+      >
+        {clipStore.burnSubtitles ? 'ON' : 'OFF'}
+      </button>
+    </div>
+
+    {#if clipStore.burnSubtitles}
+      <!-- Highlight Style: Box Highlight vs Glow Text -->
+      <div class="flex flex-col gap-1.5">
+        <span class="text-[10px] text-[#A9B3A1] uppercase">GAYA HIGHLIGHT KATA</span>
+        <div class="grid grid-cols-3 gap-1.5">
           <button
             type="button"
-            onclick={() => clipStore.subtitleColor = item.color}
-            title={item.label}
-            class="w-7 h-7 rounded-full flex-shrink-0 transition-all border-2 relative flex items-center justify-center {clipStore.subtitleColor === item.color ? 'scale-110 border-white ring-2 ring-[#D4FF00]' : 'border-transparent opacity-80 hover:opacity-100 hover:scale-105'}"
-            style="background-color: {item.color};"
+            onclick={() => clipStore.captionHighlightStyle = 'box'}
+            class="py-1.5 px-2 rounded-lg text-[11px] font-bold border transition text-center {clipStore.captionHighlightStyle === 'box' ? 'bg-[#D4FF00] text-black border-[#D4FF00] shadow' : 'bg-[#150000] text-[#A9B3A1] border-[#757D6F]/20'}"
           >
-            {#if clipStore.subtitleColor === item.color}
-              <div class="w-1.5 h-1.5 rounded-full bg-black"></div>
-            {/if}
+            🟨 Box Highlight
           </button>
-        {/each}
-      </div>
-    </div>
-
-    <!-- GLOW EFFECT Toggle -->
-    <div class="flex flex-col gap-1.5">
-      <div class="flex justify-between items-center text-[11px] font-mono text-[#A9B3A1]">
-        <span class="tracking-wide uppercase">GLOW EFFECT · OFF = CLEAN OUTLINE</span>
-        <span class="font-bold {clipStore.subtitleGlow ? 'text-[#D4FF00]' : 'text-[#757D6F]'}">
-          {clipStore.subtitleGlow ? 'ON' : 'OFF'}
-        </span>
-      </div>
-      <div class="grid grid-cols-2 p-1 bg-[#150000] rounded-xl border border-[#757D6F]/30">
-        <button
-          type="button"
-          onclick={() => clipStore.subtitleGlow = true}
-          class="py-1.5 rounded-lg text-xs font-mono font-bold transition {clipStore.subtitleGlow ? 'bg-[#EEEAD7] text-[#150000] shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
-        >
-          GLOW ON
-        </button>
-        <button
-          type="button"
-          onclick={() => clipStore.subtitleGlow = false}
-          class="py-1.5 rounded-lg text-xs font-mono font-bold transition {!clipStore.subtitleGlow ? 'bg-[#3D0404] text-[#EEEAD7] shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
-        >
-          OUTLINE ONLY
-        </button>
-      </div>
-    </div>
-
-    <!-- Animation matrix (2x4 Grid of Pills) -->
-    <div class="flex flex-col gap-1.5">
-      <span class="text-[11px] font-mono text-[#A9B3A1] tracking-wide uppercase">
-        ANIMATION · WORD-BY-WORD "TYPE"
-      </span>
-      <div class="grid grid-cols-4 gap-1.5">
-        {#each animationList as anim}
           <button
             type="button"
-            onclick={() => clipStore.subtitleAnimation = anim}
-            class="py-1.5 px-2 rounded-lg text-[11px] font-mono transition text-center {clipStore.subtitleAnimation === anim ? 'bg-[#D4FF00] text-black font-bold shadow' : 'bg-[#150000] text-[#A9B3A1] hover:text-[#EEEAD7] border border-[#757D6F]/20'}"
+            onclick={() => clipStore.captionHighlightStyle = 'glow'}
+            class="py-1.5 px-2 rounded-lg text-[11px] font-bold border transition text-center {clipStore.captionHighlightStyle === 'glow' ? 'bg-[#D4FF00] text-black border-[#D4FF00] shadow' : 'bg-[#150000] text-[#A9B3A1] border-[#757D6F]/20'}"
           >
-            {anim}
+            ✨ Glow Text
           </button>
-        {/each}
-      </div>
-    </div>
-
-    <!-- WORDS PER CHUNK (1W, 2W, 3W, 4W) -->
-    <div class="flex flex-col gap-1.5">
-      <div class="flex justify-between items-center text-[11px] font-mono text-[#A9B3A1]">
-        <span class="tracking-wide uppercase">WORDS PER CHUNK</span>
-        <span class="font-bold text-[#D4FF00]">{clipStore.wordsPerChunk} WORDS</span>
-      </div>
-      <div class="grid grid-cols-4 gap-1.5 p-1 bg-[#150000] rounded-xl border border-[#757D6F]/30">
-        {#each [1, 2, 3, 4] as num}
           <button
             type="button"
-            onclick={() => clipStore.wordsPerChunk = num}
-            class="py-1 rounded-lg text-xs font-mono font-bold transition {clipStore.wordsPerChunk === num ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+            onclick={() => clipStore.captionHighlightStyle = 'classic'}
+            class="py-1.5 px-2 rounded-lg text-[11px] font-bold border transition text-center {clipStore.captionHighlightStyle === 'classic' ? 'bg-[#D4FF00] text-black border-[#D4FF00] shadow' : 'bg-[#150000] text-[#A9B3A1] border-[#757D6F]/20'}"
           >
-            {num}W
+            🔲 Clean Outline
           </button>
-        {/each}
-      </div>
-    </div>
-
-    <!-- Sliders: Font Size & Position Y -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-[#150000] border border-[#757D6F]/30 rounded-xl">
-      <div class="flex flex-col gap-1">
-        <div class="flex justify-between items-center text-[10px] font-mono text-[#A9B3A1]">
-          <span>FONT SIZE</span>
-          <span class="text-[#EEEAD7] font-bold">{clipStore.subtitleFontSize}px</span>
         </div>
-        <input
-          type="range"
-          min="18"
-          max="42"
-          step="1"
-          bind:value={clipStore.subtitleFontSize}
-          class="accent-[#D4FF00] h-1.5 bg-[#2D0000] rounded-lg cursor-pointer"
-        />
       </div>
 
-      <div class="flex flex-col gap-1">
-        <div class="flex justify-between items-center text-[10px] font-mono text-[#A9B3A1]">
-          <span>Y POSITION</span>
-          <span class="text-[#EEEAD7] font-bold">{clipStore.subtitlePosY}%</span>
+      <!-- Palette Color Swatches -->
+      <div class="flex flex-col gap-1.5">
+        <span class="text-[10px] text-[#A9B3A1] uppercase">WARNA HIGHLIGHT</span>
+        <div class="flex items-center gap-2 overflow-x-auto pb-1">
+          {#each colorPalette as item}
+            <button
+              type="button"
+              onclick={() => clipStore.subtitleColor = item.color}
+              title={item.label}
+              class="w-7 h-7 rounded-full flex-shrink-0 transition-all border-2 relative flex items-center justify-center {clipStore.subtitleColor === item.color ? 'scale-110 border-white ring-2 ring-[#D4FF00]' : 'border-transparent opacity-80 hover:opacity-100 hover:scale-105'}"
+              style="background-color: {item.color};"
+            >
+              {#if clipStore.subtitleColor === item.color}
+                <div class="w-1.5 h-1.5 rounded-full bg-black"></div>
+              {/if}
+            </button>
+          {/each}
         </div>
-        <input
-          type="range"
-          min="50"
-          max="90"
-          step="1"
-          bind:value={clipStore.subtitlePosY}
-          class="accent-[#D4FF00] h-1.5 bg-[#2D0000] rounded-lg cursor-pointer"
-        />
       </div>
-    </div>
-  {/if}
 
-  <!-- Batch Render CTA (Reflecting chosen format) -->
+      <!-- Animation Presets -->
+      <div class="flex flex-col gap-1.5">
+        <span class="text-[10px] text-[#A9B3A1] uppercase">ANIMASI KATA (KINETIC)</span>
+        <div class="grid grid-cols-4 gap-1.5">
+          {#each animationList as anim}
+            <button
+              type="button"
+              onclick={() => clipStore.subtitleAnimation = anim}
+              class="py-1 px-2 rounded-lg text-[11px] transition text-center {clipStore.subtitleAnimation === anim ? 'bg-[#D4FF00] text-black font-bold shadow' : 'bg-[#150000] text-[#A9B3A1] hover:text-[#EEEAD7] border border-[#757D6F]/20'}"
+            >
+              {anim}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <!-- Words per chunk + Sliders -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2.5 bg-[#150000] rounded-xl border border-[#757D6F]/20 text-[10px]">
+        <div class="flex flex-col gap-1">
+          <div class="flex justify-between items-center text-[#A9B3A1]">
+            <span>KATA PER BARIS</span>
+            <span class="font-bold text-[#D4FF00]">{clipStore.wordsPerChunk} Kata</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1 mt-0.5">
+            {#each [1, 2, 3, 4] as num}
+              <button
+                type="button"
+                onclick={() => clipStore.wordsPerChunk = num}
+                class="py-0.5 rounded text-center font-bold {clipStore.wordsPerChunk === num ? 'bg-[#D4FF00] text-black' : 'bg-[#200202] text-[#A9B3A1]'}"
+              >
+                {num}W
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <div class="flex justify-between items-center text-[#A9B3A1]">
+            <span>UKURAN FONT & POSISI</span>
+            <span class="text-[#EEEAD7] font-bold">{clipStore.subtitleFontSize}px • {clipStore.subtitlePosY}%</span>
+          </div>
+          <input
+            type="range"
+            min="18"
+            max="38"
+            step="1"
+            bind:value={clipStore.subtitleFontSize}
+            class="accent-[#D4FF00] h-1.5 bg-[#200202] rounded-lg cursor-pointer"
+          />
+        </div>
+      </div>
+    {/if}
+  </div>
+
+  <!-- BIG ACTION CTA: RENDER & DOWNLOAD -->
   <button
     type="button"
     disabled={clipStore.isRendering}
     onclick={onRender}
-    class="w-full py-3 px-4 rounded-xl font-bold font-mono text-sm tracking-wide flex items-center justify-center gap-2 transition shadow-xl bg-[#D4FF00] hover:bg-[#c7f000] text-black active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+    class="w-full py-3.5 px-4 rounded-xl font-bold font-mono text-sm tracking-wide flex items-center justify-center gap-2 transition shadow-xl bg-[#D4FF00] hover:bg-[#c7f000] text-black active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
   >
-    <Download size={16} class="text-black" />
-    <span>⬇ Render Clip ({clipStore.aspectRatio})</span>
+    <Download size={17} class="text-black" />
+    <span>⬇ Render & Download Klip ({clipStore.aspectRatio} • {clipStore.layoutMode.toUpperCase()})</span>
   </button>
 </div>

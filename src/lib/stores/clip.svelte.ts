@@ -35,7 +35,13 @@ class ClipStudioStore {
   subtitleFontSize = $state<number>(28);
   subtitlePosY = $state<number>(80); // percentage from top
   wordsPerChunk = $state<number>(2);
+  captionHighlightStyle = $state<'box' | 'glow' | 'classic'>('box');
   clipFilter = $state<'all' | 'hot' | 'downloaded'>('all');
+
+  // Hook Title Bar (SOCL Visuals Style)
+  showHookTitle = $state<boolean>(true);
+  hookTitleText = $state<string>('');
+  hookTitleTheme = $state<'yellow' | 'red' | 'neon' | 'dark'>('yellow');
   
   // Bulk Download state
   selectedClipIdsForBulk = $state<string[]>([]);
@@ -158,6 +164,9 @@ class ClipStudioStore {
     this.selectedStart = clip.start;
     this.selectedEnd = clip.end;
     this.activeClipRank = clip.rank;
+    if (clip.label) {
+      this.hookTitleText = clip.label.toUpperCase();
+    }
     // Auto-update batch if clip belongs to a different batch
     const clipBatch = Math.floor((clip.rank - 1) / 3) + 1;
     if (clipBatch !== this.currentBatch && clipBatch <= this.totalBatches) {

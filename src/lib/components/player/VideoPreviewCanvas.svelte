@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Play, Pause, RotateCcw, RotateCw, Subtitles, Crop, Film } from 'lucide-svelte';
+  import { Play, Pause, RotateCcw, RotateCw, Subtitles, Crop } from 'lucide-svelte';
   import { clipStore } from '../../stores/clip.svelte';
 
   let {
@@ -35,14 +35,14 @@
   const frameClass = $derived.by(() => {
     switch (aspectRatio) {
       case '16:9':
-        return 'w-full max-w-[440px] aspect-[16/9]';
+        return 'w-full max-w-[460px] aspect-[16/9]';
       case '1:1':
-        return 'w-[260px] sm:w-[300px] aspect-square';
+        return 'w-[280px] sm:w-[320px] aspect-square';
       case '4:5':
-        return 'w-[250px] sm:w-[280px] aspect-[4/5]';
+        return 'w-[260px] sm:w-[300px] aspect-[4/5]';
       case '9:16':
       default:
-        return 'w-[230px] sm:w-[260px] h-[410px] sm:h-[460px]';
+        return 'w-[240px] sm:w-[275px] h-[426px] sm:h-[490px]';
     }
   });
 
@@ -52,9 +52,9 @@
       case '16:9':
         return 'w-full h-full object-cover pointer-events-none';
       case '1:1':
-        return 'w-[500px] h-full max-w-none pointer-events-none scale-110 object-cover';
+        return 'w-[520px] h-full max-w-none pointer-events-none scale-110 object-cover';
       case '4:5':
-        return 'w-[560px] h-full max-w-none pointer-events-none scale-115 object-cover';
+        return 'w-[580px] h-full max-w-none pointer-events-none scale-115 object-cover';
       case '9:16':
       default:
         return 'w-[750px] h-full max-w-none pointer-events-none scale-125 object-cover';
@@ -173,7 +173,7 @@
     }
 
     // Fallback display when paused or between spoken sentences
-    const sampleWords = ['VIRAL', 'HOOK', 'CLIP'];
+    const sampleWords = ['VIRAL', 'HOOK', 'MOMENT'];
     return {
       chunkWords: sampleWords,
       activeInChunk: 0,
@@ -192,6 +192,23 @@
 <div class="flex flex-col items-center w-full">
   <!-- Dynamic Phone / Desktop Frame -->
   <div class="relative {frameClass} bg-[#0c0c0e] rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl flex items-center justify-center group transition-all">
+    <!-- TOP HOOK TITLE OVERLAY (Preset Title like SOCL Visuals) -->
+    {#if clipStore.showHookTitle && (clipStore.hookTitleText || clipStore.analysisResult?.title)}
+      <div class="absolute top-4 inset-x-3 text-center pointer-events-none z-20 px-2 transition-all">
+        <div
+          class="inline-block max-w-[92%] px-3 py-1.5 rounded-lg font-black tracking-tight uppercase shadow-2xl leading-snug {
+            clipStore.hookTitleTheme === 'yellow' ? 'bg-[#FFE600] text-black border border-black/20' :
+            clipStore.hookTitleTheme === 'red' ? 'bg-[#FF1E1E] text-white border border-white/20' :
+            clipStore.hookTitleTheme === 'neon' ? 'bg-[#D4FF00] text-black border border-black/20' :
+            'bg-black/90 text-white border border-white/25'
+          }"
+          style="font-size: 13px;"
+        >
+          {clipStore.hookTitleText || clipStore.analysisResult?.title}
+        </div>
+      </div>
+    {/if}
+
     {#if clipStore.analysisResult?.directVideoUrl}
       {#if clipStore.layoutMode === 'split'}
         <!-- Podcast Stacked Split-Screen (Top: Host 15%, Bottom: Guest 85%) -->
@@ -205,7 +222,7 @@
               playsinline
               muted={false}
             ></video>
-            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-[#D4FF00]/40 text-[9px] font-mono font-bold text-[#D4FF00] shadow">
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-[#D4FF00]/40 text-[9px] font-mono font-bold text-[#D4FF00] shadow z-10">
               HOST (L)
             </span>
           </div>
@@ -219,7 +236,7 @@
               playsinline
               muted={true}
             ></video>
-            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-white/20 text-[9px] font-mono font-bold text-white/90 shadow">
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-white/20 text-[9px] font-mono font-bold text-white/90 shadow z-10">
               GUEST (R)
             </span>
           </div>
@@ -264,7 +281,7 @@
               style="transform: scale(1.2) translateX(25%);"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             ></iframe>
-            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-[#D4FF00]/40 text-[9px] font-mono font-bold text-[#D4FF00]">
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-[#D4FF00]/40 text-[9px] font-mono font-bold text-[#D4FF00] z-10">
               HOST (L)
             </span>
           </div>
@@ -276,7 +293,7 @@
               style="transform: scale(1.2) translateX(-25%);"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             ></iframe>
-            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-white/20 text-[9px] font-mono font-bold text-white/90">
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/75 border border-white/20 text-[9px] font-mono font-bold text-white/90 z-10">
               GUEST (R)
             </span>
           </div>
@@ -297,7 +314,7 @@
       </div>
     {/if}
 
-    <!-- DYNAMIC KINETIC SUBTITLE OVERLAY (Synchronized Word-by-Word with Video) -->
+    <!-- DYNAMIC KINETIC SUBTITLE OVERLAY (Word-by-Word with Box Highlight or Glow) -->
     {#if burnSubtitles && (videoId || clipStore.analysisResult?.directVideoUrl)}
       <div
         class="absolute inset-x-3 text-center pointer-events-none transition-all px-2 z-10"
@@ -307,21 +324,46 @@
           class="inline-block max-w-full font-black tracking-wide uppercase leading-tight select-none"
           style="
             font-size: {Math.max(16, Math.min(36, clipStore.subtitleFontSize))}px;
-            filter: {clipStore.subtitleGlow ? `drop-shadow(0 0 16px ${clipStore.subtitleColor}90) drop-shadow(0 4px 6px rgba(0,0,0,0.95))` : 'drop-shadow(0 4px 6px rgba(0,0,0,0.98))'};
             text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
           "
         >
           {#each subtitleState.chunkWords as word, idx (idx)}
             {@const isActiveKaraoke = idx === subtitleState.activeInChunk}
-            <span
-              class="inline-block mx-1.5 transition-all {isActiveKaraoke ? animationClass : ''}"
-              style="
-                color: {isActiveKaraoke ? clipStore.subtitleColor : '#FFFFFF'};
-                transform-origin: center bottom;
-              "
-            >
-              {word}
-            </span>
+            {#if isActiveKaraoke}
+              {#if clipStore.captionHighlightStyle === 'box'}
+                <!-- Hormozi Box Highlight (SOCL Visuals Signature) -->
+                <span
+                  class="inline-block mx-1 px-2 py-0.5 rounded-md font-black shadow-2xl transition-all {animationClass}"
+                  style="
+                    background-color: {clipStore.subtitleColor};
+                    color: #000000;
+                    text-shadow: none;
+                    transform-origin: center bottom;
+                  "
+                >
+                  {word}
+                </span>
+              {:else}
+                <!-- Glow & Vibrant Text -->
+                <span
+                  class="inline-block mx-1.5 transition-all {animationClass}"
+                  style="
+                    color: {clipStore.subtitleColor};
+                    filter: {clipStore.subtitleGlow ? `drop-shadow(0 0 16px ${clipStore.subtitleColor}90)` : 'none'};
+                    transform-origin: center bottom;
+                  "
+                >
+                  {word}
+                </span>
+              {/if}
+            {:else}
+              <span
+                class="inline-block mx-1.5 text-white transition-all opacity-95"
+                style="transform-origin: center bottom;"
+              >
+                {word}
+              </span>
+            {/if}
           {/each}
         </div>
       </div>
@@ -373,7 +415,7 @@
             clipStore.aspectRatio = ratios[nextIdx];
           }}
           class="hidden sm:flex items-center gap-1 px-2 py-0.5 bg-white/10 hover:bg-white/20 rounded-md text-[10px] text-white/90 transition hover:scale-105 active:scale-95 font-bold"
-          title="Click to cycle aspect ratio (9:16, 4:5, 1:1, 16:9)"
+          title="Ubah Rasio Layar"
         >
           <Crop size={11} />
           <span>{aspectRatio}</span>
@@ -384,7 +426,7 @@
           type="button"
           onclick={onToggleSubtitles}
           class="px-2 py-0.5 rounded-md text-[11px] font-bold transition flex items-center gap-1 {burnSubtitles ? 'bg-[#D4FF00]/20 text-[#D4FF00] border border-[#D4FF00]/40' : 'bg-white/5 text-white/40'}"
-          title="Toggle Subtitles"
+          title="Toggle Subtitle"
         >
           <Subtitles size={12} />
           <span>CC</span>
@@ -396,96 +438,6 @@
         </span>
       </div>
     </div>
-  </div>
-
-  <!-- FRAMING & PODCAST LAYOUT CONTROLLER -->
-  <div class="w-full flex flex-col gap-2 p-2.5 bg-[#150000] border border-[#757D6F]/30 rounded-xl font-mono text-xs shadow-md mt-2">
-    <div class="flex items-center justify-between">
-      <span class="text-[10px] text-[#A9B3A1] font-bold flex items-center gap-1">
-        <Film size={12} class="text-[#D4FF00]" />
-        <span>PODCAST FRAMING & LAYOUT:</span>
-      </span>
-      <span class="text-[10px] text-[#D4FF00] font-bold uppercase">
-        {clipStore.layoutMode === 'split' ? 'SPLIT (50/50)' : (clipStore.layoutMode === 'fit-blur' ? 'FIT BLUR' : 'SINGLE CAMERA')}
-      </span>
-    </div>
-
-    <!-- 3 Quick Layout Tabs -->
-    <div class="grid grid-cols-3 gap-1.5 p-1 bg-[#200202] rounded-lg border border-[#757D6F]/25 text-[11px]">
-      <button
-        type="button"
-        onclick={() => clipStore.layoutMode = 'single'}
-        class="py-1 px-2 rounded-md font-bold transition flex items-center justify-center gap-1 {clipStore.layoutMode === 'single' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-white'}"
-      >
-        <span>Single</span>
-      </button>
-
-      <button
-        type="button"
-        onclick={() => clipStore.layoutMode = 'split'}
-        class="py-1 px-2 rounded-md font-bold transition flex items-center justify-center gap-1 {clipStore.layoutMode === 'split' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-white'}"
-        title="Stack Host on top & Guest on bottom"
-      >
-        <span>Split 50/50</span>
-      </button>
-
-      <button
-        type="button"
-        onclick={() => clipStore.layoutMode = 'fit-blur'}
-        class="py-1 px-2 rounded-md font-bold transition flex items-center justify-center gap-1 {clipStore.layoutMode === 'fit-blur' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-white'}"
-        title="Full video with blurred background"
-      >
-        <span>Fit Blur</span>
-      </button>
-    </div>
-
-    <!-- Interactive Pan Slider & Presets when on Single Mode -->
-    {#if clipStore.layoutMode === 'single'}
-      <div class="flex flex-col gap-1.5 pt-1 border-t border-white/5">
-        <div class="flex items-center justify-between text-[10px] text-[#A9B3A1]">
-          <span>CAMERA FOCUS / PAN:</span>
-          <div class="flex items-center gap-1">
-            <button
-              type="button"
-              onclick={() => clipStore.panOffset = 0.15}
-              class="px-1.5 py-0.5 rounded bg-[#2D0000] hover:bg-[#3D0404] text-[10px] font-bold transition border border-[#757D6F]/30 {Math.abs(clipStore.panOffset - 0.15) < 0.05 ? 'border-[#D4FF00] text-[#D4FF00]' : 'text-[#A9B3A1]'}"
-            >
-              Host
-            </button>
-            <button
-              type="button"
-              onclick={() => clipStore.panOffset = 0.5}
-              class="px-1.5 py-0.5 rounded bg-[#2D0000] hover:bg-[#3D0404] text-[10px] font-bold transition border border-[#757D6F]/30 {Math.abs(clipStore.panOffset - 0.5) < 0.05 ? 'border-[#D4FF00] text-[#D4FF00]' : 'text-[#A9B3A1]'}"
-            >
-              Center
-            </button>
-            <button
-              type="button"
-              onclick={() => clipStore.panOffset = 0.85}
-              class="px-1.5 py-0.5 rounded bg-[#2D0000] hover:bg-[#3D0404] text-[10px] font-bold transition border border-[#757D6F]/30 {Math.abs(clipStore.panOffset - 0.85) < 0.05 ? 'border-[#D4FF00] text-[#D4FF00]' : 'text-[#A9B3A1]'}"
-            >
-              Guest
-            </button>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <span class="text-[9px] text-[#757D6F]">L</span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            bind:value={clipStore.panOffset}
-            class="accent-[#D4FF00] h-1.5 w-full bg-[#2D0000] rounded-lg cursor-pointer"
-          />
-          <span class="text-[9px] text-[#757D6F]">R</span>
-          <span class="text-[10px] text-[#D4FF00] font-bold w-9 text-right font-mono">
-            {Math.round(clipStore.panOffset * 100)}%
-          </span>
-        </div>
-      </div>
-    {/if}
   </div>
 
   <!-- Keyboard Shortcuts Cheat-Sheet -->

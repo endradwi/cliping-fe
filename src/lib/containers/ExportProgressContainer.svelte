@@ -70,7 +70,7 @@
                 class="flex-1 py-2 px-3 bg-[#150000] hover:bg-[#2D0000] text-[#A9B3A1] hover:text-[#EEEAD7] border border-[#757D6F]/30 rounded-lg text-xs font-mono flex items-center justify-center gap-1.5 transition truncate"
               >
                 <ExternalLink size={13} />
-                <span>R2 Mirror</span>
+                <span>Link Cadangan</span>
               </a>
             {/if}
             <Button variant="outline" size="sm" class="flex-1 py-2 text-xs" onclick={handleClose}>
@@ -93,21 +93,21 @@
           <Loader2 size={26} class="animate-spin" />
         </div>
         <h3 class="text-lg font-bold text-[#EEEAD7] mb-1 capitalize">
-          {clipStore.renderProgress.status}...
+          {clipStore.renderProgress.status === 'queued' ? 'Menyiapkan Render' : (clipStore.renderProgress.status === 'downloading' ? 'Memproses Video' : (clipStore.renderProgress.status === 'slicing' ? 'Memotong & Merender Klip' : 'Menyimpan Hasil'))}...
         </h3>
         <p class="text-xs text-[#A9B3A1] mb-4 font-mono">
-          {clipStore.renderProgress.progressPercent}% Completed
+          {clipStore.renderProgress.progressPercent}% Selesai
         </p>
 
         <!-- Progress bar -->
         <div class="w-full h-2.5 bg-[#150000] rounded-full overflow-hidden border border-[#757D6F]/30 mb-2">
           <div
-            class="h-full bg-[#6D0808] transition-all duration-300 rounded-full"
+            class="h-full bg-[#D4FF00] transition-all duration-300 rounded-full"
             style="width: {clipStore.renderProgress.progressPercent}%"
           ></div>
         </div>
-        <span class="text-[11px] text-[#757D6F] font-mono">
-          Zero-disk FFmpeg stream-slicing & R2 upload in progress
+        <span class="text-[11px] text-[#A9B3A1] font-mono">
+          Sedang memproses & merender video HD...
         </span>
       {/if}
     </div>

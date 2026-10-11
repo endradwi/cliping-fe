@@ -20,7 +20,7 @@
       const data = await analyzeVideoUrl(url);
       await clipStore.setAnalysis(data, url);
     } catch (err: any) {
-      const msg = err.message || 'Failed to fetch YouTube retention telemetry';
+      const msg = err.message || 'Gagal memproses video. Silakan coba unggah file video langsung.';
       errorMsg = msg;
       if (
         msg.toLowerCase().includes('bot') ||
@@ -183,9 +183,9 @@
           <Loader2 size={36} class="text-[#D4FF00] animate-spin" />
           <div class="text-sm font-bold text-[#EEEAD7] font-mono">
             {#if clipStore.isUploading}
-              Uploading directly to Cloudflare R2 ({clipStore.uploadProgress}%)
+              Mengunggah video... ({clipStore.uploadProgress}%)
             {:else}
-              Extracting Audio Chunks & Transcribing via Whisper LPU...
+              Menganalisis audio & mendeteksi momen terbaik...
             {/if}
           </div>
           <!-- Upload Progress bar -->

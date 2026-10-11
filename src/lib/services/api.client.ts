@@ -141,6 +141,8 @@ export async function triggerRenderClip(payload: {
   panOffset?: number;
   burnSubtitles: boolean;
   title?: string;
+  hookTitle?: string;
+  hookTitleTheme?: 'yellow' | 'red' | 'neon' | 'dark';
 }): Promise<{ jobId: string; status?: string; r2Url?: string; cached?: boolean }> {
   const res = await fetch(`${API_BASE}/api/v1/clips/render`, {
     method: 'POST',
