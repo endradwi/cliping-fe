@@ -1,6 +1,6 @@
 <script lang="ts">
   import { settingsStore } from '../stores/settings.svelte';
-  import { saveByokSettings } from '../services/api.client';
+  import { saveByokSettings, API_BASE } from '../services/api.client';
   import Button from '../components/ui/Button.svelte';
   import { X, Check, KeyRound, Cookie } from 'lucide-svelte';
 
@@ -25,7 +25,7 @@
   async function handleSaveCookies() {
     if (!cookiesInput.trim()) return;
     try {
-      const res = await fetch('/api/v1/cookies', {
+      const res = await fetch(`${API_BASE}/api/v1/cookies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cookies: cookiesInput })

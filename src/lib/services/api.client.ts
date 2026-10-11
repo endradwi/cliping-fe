@@ -1,6 +1,6 @@
 import type { VideoAnalysisResult } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+export const API_BASE = (import.meta.env.PUBLIC_API_URL || import.meta.env.VITE_API_URL || 'https://api-clip.endra.web.id').replace(/\/$/, '');
 
 export async function analyzeVideoUrl(url: string): Promise<VideoAnalysisResult> {
   const res = await fetch(`${API_BASE}/api/v1/analyze`, {

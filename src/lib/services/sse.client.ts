@@ -1,6 +1,5 @@
 import type { RenderJobProgress } from '../types';
-
-const API_BASE = import.meta.env.VITE_API_URL || '';
+import { API_BASE } from './api.client';
 
 export function subscribeToProgress(
   jobId: string,

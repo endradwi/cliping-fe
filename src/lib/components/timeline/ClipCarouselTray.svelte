@@ -1,7 +1,7 @@
 <script lang="ts">
   import { clipStore } from '../../stores/clip.svelte';
   import type { CandidateClip } from '../../types';
-  import { triggerRenderClip } from '../../services/api.client';
+  import { triggerRenderClip, API_BASE } from '../../services/api.client';
   import { Flame, CheckCircle, Download, CheckSquare, Square, Loader2, Play, PackageCheck } from 'lucide-svelte';
   import JSZip from 'jszip';
 
@@ -66,7 +66,7 @@
             while (pollAttempts < 60) {
               await new Promise(r => setTimeout(r, 2000));
               pollAttempts++;
-              const checkRes = await fetch(`/api/v1/clips/${jobId}`);
+              const checkRes = await fetch(`${API_BASE}/api/v1/clips/${jobId}`);
               const checkData = await checkRes.json();
               if (checkData.success && checkData.data?.status === 'completed') {
                 downloadUrl = checkData.data.r2Url;
@@ -79,7 +79,7 @@
         }
 
         // Fetch clip stream blob directly
-        const fileFetchUrl = `/api/v1/clips/${jobId}/download`;
+        const fileFetchUrl = `${API_BASE}/api/v1/clips/${jobId}/download`;
         const blobResp = await fetch(fileFetchUrl);
         if (!blobResp.ok) {
           throw new Error(`Failed to download clip #${clip.rank} stream`);

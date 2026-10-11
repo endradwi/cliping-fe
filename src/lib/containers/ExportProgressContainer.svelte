@@ -1,6 +1,7 @@
 <script lang="ts">
   import { clipStore } from '../stores/clip.svelte';
   import { subscribeToProgress } from '../services/sse.client';
+  import { API_BASE } from '../services/api.client';
   import { Download, CheckCircle2, AlertCircle, Loader2, ExternalLink } from 'lucide-svelte';
   import Button from '../components/ui/Button.svelte';
 
@@ -51,7 +52,7 @@
         <div class="w-full flex flex-col gap-2.5">
           <!-- Primary Direct Stream Download (bypasses ISP blocks on *.r2.dev) -->
           <a
-            href={`/api/v1/clips/${clipStore.renderProgress.id}/download`}
+            href={`${API_BASE}/api/v1/clips/${clipStore.renderProgress.id}/download`}
             download
             class="w-full py-2.5 px-4 bg-[#6D0808] hover:bg-[#870E0E] text-[#EEEAD7] font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition shadow-lg border border-[#EEEAD7]/20"
           >
