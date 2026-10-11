@@ -9,7 +9,7 @@
 <div class="min-h-screen bg-[#150000] text-[#EEEAD7] flex flex-col selection:bg-[#6D0808] selection:text-[#EEEAD7]">
   <!-- Top Navigation Bar -->
   <header class="w-full border-b border-[#757D6F]/30 bg-[#2D0000]/80 backdrop-blur-xl sticky top-0 z-40">
-    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="max-w-[1760px] w-full mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
       <!-- Logo -->
       <a href="/" class="flex items-center gap-2.5 font-bold tracking-tight text-[#EEEAD7] hover:opacity-90 transition">
         <div class="w-8 h-8 rounded-lg bg-[#6D0808] flex items-center justify-center text-[#EEEAD7] shadow-lg shadow-black/60 border border-[#870E0E]/50">
@@ -43,7 +43,7 @@
   </header>
 
   <!-- Main Content -->
-  <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
+  <main class="flex-1 max-w-[1760px] w-full mx-auto px-4 sm:px-6 py-5">
     {@render children()}
   </main>
 

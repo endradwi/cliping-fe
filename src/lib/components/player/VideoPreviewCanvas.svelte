@@ -35,14 +35,14 @@
   const frameClass = $derived.by(() => {
     switch (aspectRatio) {
       case '16:9':
-        return 'w-full max-w-[460px] aspect-[16/9]';
+        return 'w-full max-w-[560px] aspect-[16/9]';
       case '1:1':
-        return 'w-[280px] sm:w-[320px] aspect-square';
+        return 'w-[300px] sm:w-[360px] md:w-[400px] aspect-square';
       case '4:5':
-        return 'w-[260px] sm:w-[300px] aspect-[4/5]';
+        return 'w-[280px] sm:w-[340px] md:w-[380px] aspect-[4/5]';
       case '9:16':
       default:
-        return 'w-[240px] sm:w-[275px] h-[426px] sm:h-[490px]';
+        return 'w-[260px] sm:w-[300px] md:w-[340px] lg:w-[360px] xl:w-[380px] h-[462px] sm:h-[533px] md:h-[604px] lg:h-[640px] xl:h-[675px]';
     }
   });
 
@@ -142,9 +142,10 @@
   // Find currently spoken transcript line synchronized to exact video timestamp
   const activeLine = $derived.by(() => {
     const transcript = clipStore.analysisResult?.transcript || [];
+    const t = currentTime - (clipStore.subtitleSyncOffset || 0);
     return transcript.find(line => {
       const lineEnd = line.start + (line.duration || 2.5);
-      return currentTime >= line.start && currentTime <= lineEnd;
+      return t >= line.start && t <= lineEnd;
     });
   });
 
@@ -194,7 +195,10 @@
   <div class="relative {frameClass} bg-[#0c0c0e] rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl flex items-center justify-center group transition-all">
     <!-- TOP HOOK TITLE OVERLAY (Preset Title like SOCL Visuals) -->
     {#if clipStore.showHookTitle && (clipStore.hookTitleText || clipStore.analysisResult?.title)}
-      <div class="absolute top-4 inset-x-3 text-center pointer-events-none z-20 px-2 transition-all">
+      <div
+        class="absolute inset-x-3 text-center pointer-events-none z-20 px-2 transition-all"
+        style="top: {clipStore.hookTitlePosY}%;"
+      >
         <div
           class="inline-block max-w-[92%] px-3 py-1.5 rounded-lg font-black tracking-tight uppercase shadow-2xl leading-snug {
             clipStore.hookTitleTheme === 'yellow' ? 'bg-[#FFE600] text-black border border-black/20' :
@@ -329,7 +333,9 @@
         >
           {#each subtitleState.chunkWords as word, idx (idx)}
             {@const isActiveKaraoke = idx === subtitleState.activeInChunk}
-            {#if isActiveKaraoke}
+            {@const isCustomHighlighted = clipStore.isWordHighlighted(word)}
+            {@const shouldHighlight = isActiveKaraoke || isCustomHighlighted}
+            {#if shouldHighlight}
               {#if clipStore.captionHighlightStyle === 'box'}
                 <!-- Hormozi Box Highlight (SOCL Visuals Signature) -->
                 <span

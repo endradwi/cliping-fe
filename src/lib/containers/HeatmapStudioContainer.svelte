@@ -242,8 +242,8 @@
           </div>
         </div>
 
-        <!-- RIGHT COLUMN: Inspector Studio Controls -->
-        <div class="lg:col-span-7 flex flex-col gap-4 w-full">
+        <!-- RIGHT COLUMN: Inspector Studio Controls (Scrollable Independent Container) -->
+        <div class="lg:col-span-7 xl:col-span-7 flex flex-col gap-4 w-full lg:max-h-[calc(100vh-130px)] lg:overflow-y-auto pr-1">
           <CaptionMoodPanel
             {activeTranscriptText}
             onRender={handleExport}

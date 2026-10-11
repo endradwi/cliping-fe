@@ -37,11 +37,14 @@ class ClipStudioStore {
   wordsPerChunk = $state<number>(2);
   captionHighlightStyle = $state<'box' | 'glow' | 'classic'>('box');
   clipFilter = $state<'all' | 'hot' | 'downloaded'>('all');
+  highlightedWords = $state<string[]>([]);
+  subtitleSyncOffset = $state<number>(0); // in seconds, e.g. -0.2 to +0.2
 
   // Hook Title Bar (SOCL Visuals Style)
   showHookTitle = $state<boolean>(true);
   hookTitleText = $state<string>('');
   hookTitleTheme = $state<'yellow' | 'red' | 'neon' | 'dark'>('yellow');
+  hookTitlePosY = $state<number>(8); // percentage from top (default 8%)
   
   // Bulk Download state
   selectedClipIdsForBulk = $state<string[]>([]);
@@ -178,6 +181,25 @@ class ClipStudioStore {
     this.selectedStart = Math.max(0, start);
     this.selectedEnd = Math.max(this.selectedStart + 5, end);
     this.activeClipRank = 0; // manual override
+  }
+
+  toggleWordHighlight(word: string) {
+    const clean = word.toLowerCase().replace(/[^a-z0-9]/gi, '');
+    if (!clean) return;
+    if (this.highlightedWords.includes(clean)) {
+      this.highlightedWords = this.highlightedWords.filter((w: string) => w !== clean);
+    } else {
+      this.highlightedWords = [...this.highlightedWords, clean];
+    }
+  }
+
+  isWordHighlighted(word: string): boolean {
+    const clean = word.toLowerCase().replace(/[^a-z0-9]/gi, '');
+    return this.highlightedWords.includes(clean);
+  }
+
+  nudgeSync(deltaSeconds: number) {
+    this.subtitleSyncOffset = Number((this.subtitleSyncOffset + deltaSeconds).toFixed(2));
   }
 
   reset() {
