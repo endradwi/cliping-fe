@@ -24,7 +24,7 @@ class ClipStudioStore {
   
   // Toggles
   burnSubtitles = $state<boolean>(true);
-  aspectRatio = $state<'9:16' | '1:1' | '16:9'>('9:16');
+  aspectRatio = $state<'9:16' | '1:1' | '16:9' | '4:5'>('9:16');
 
   // Subtitle / Caption Mood Styling (Modern Opus/Submagic Style)
   subtitleColor = $state<string>('#D4FF00'); // Electric Neon Lime default
@@ -33,7 +33,7 @@ class ClipStudioStore {
   subtitleFontSize = $state<number>(28);
   subtitlePosY = $state<number>(80); // percentage from top
   wordsPerChunk = $state<number>(2);
-  highlightedWordIndices = $state<number[]>([0]); // words to highlight
+  highlightedWords = $state<string[]>([]); // keywords to highlight permanently across video
   clipFilter = $state<'all' | 'hot' | 'downloaded'>('all');
   
   // Bulk Download state
@@ -88,7 +88,7 @@ class ClipStudioStore {
     this.analysisResult = data;
     this.videoUrl = rawUrl;
     this.currentBatch = 1;
-    this.highlightedWordIndices = [0];
+    this.highlightedWords = [];
     this.selectedClipIdsForBulk = [];
 
     if (data.topClips.length > 0) {
@@ -171,12 +171,19 @@ class ClipStudioStore {
     this.activeClipRank = 0; // manual override
   }
 
-  toggleWordHighlight(idx: number) {
-    if (this.highlightedWordIndices.includes(idx)) {
-      this.highlightedWordIndices = this.highlightedWordIndices.filter(i => i !== idx);
+  toggleWordHighlight(word: string) {
+    const clean = word.toLowerCase().replace(/[^a-z0-9]/gi, '');
+    if (!clean) return;
+    if (this.highlightedWords.includes(clean)) {
+      this.highlightedWords = this.highlightedWords.filter((w: string) => w !== clean);
     } else {
-      this.highlightedWordIndices = [...this.highlightedWordIndices, idx];
+      this.highlightedWords = [...this.highlightedWords, clean];
     }
+  }
+
+  isWordHighlighted(word: string): boolean {
+    const clean = word.toLowerCase().replace(/[^a-z0-9]/gi, '');
+    return Boolean(clean && this.highlightedWords.includes(clean));
   }
 
   reset() {
@@ -189,7 +196,7 @@ class ClipStudioStore {
     this.isUploading = false;
     this.uploadProgress = 0;
     this.uploadFilename = '';
-    this.highlightedWordIndices = [0];
+    this.highlightedWords = [];
     this.selectedClipIdsForBulk = [];
     this.bulkDownloadProgress = null;
   }

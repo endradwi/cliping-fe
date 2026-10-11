@@ -37,6 +37,8 @@
         return 'w-full max-w-[440px] aspect-[16/9]';
       case '1:1':
         return 'w-[280px] sm:w-[320px] aspect-square';
+      case '4:5':
+        return 'w-[270px] sm:w-[310px] aspect-[4/5]';
       case '9:16':
       default:
         return 'w-[260px] sm:w-[290px] h-[460px] sm:h-[515px]';
@@ -50,6 +52,8 @@
         return 'w-full h-full object-cover pointer-events-none';
       case '1:1':
         return 'w-[500px] h-full max-w-none pointer-events-none scale-110 object-cover';
+      case '4:5':
+        return 'w-[560px] h-full max-w-none pointer-events-none scale-115 object-cover';
       case '9:16':
       default:
         return 'w-[750px] h-full max-w-none pointer-events-none scale-125 object-cover';
@@ -214,11 +218,13 @@
           "
         >
           {#each subtitleState.chunkWords as word, idx (idx)}
-            {@const isActiveWord = idx === subtitleState.activeInChunk}
+            {@const isActiveKaraoke = idx === subtitleState.activeInChunk}
+            {@const isUserKeyword = clipStore.isWordHighlighted(word)}
+            {@const isHighlighted = isActiveKaraoke || isUserKeyword}
             <span
-              class="inline-block mx-1.5 transition-all {isActiveWord ? animationClass : ''}"
+              class="inline-block mx-1.5 transition-all {isActiveKaraoke ? animationClass : ''} {isUserKeyword ? 'scale-105' : ''}"
               style="
-                color: {isActiveWord ? clipStore.subtitleColor : '#FFFFFF'};
+                color: {isHighlighted ? clipStore.subtitleColor : '#FFFFFF'};
                 transform-origin: center bottom;
               "
             >
@@ -266,11 +272,20 @@
           <RotateCw size={14} />
         </button>
 
-        <!-- Aspect Ratio badge -->
-        <div class="hidden sm:flex items-center gap-1 px-1.5 py-0.5 bg-white/10 rounded-md text-[10px] text-white/70">
+        <!-- Aspect Ratio switch toggle -->
+        <button
+          type="button"
+          onclick={() => {
+            const ratios: Array<'9:16' | '4:5' | '1:1' | '16:9'> = ['9:16', '4:5', '1:1', '16:9'];
+            const nextIdx = (ratios.indexOf(clipStore.aspectRatio as any) + 1) % ratios.length;
+            clipStore.aspectRatio = ratios[nextIdx];
+          }}
+          class="hidden sm:flex items-center gap-1 px-2 py-0.5 bg-white/10 hover:bg-white/20 rounded-md text-[10px] text-white/90 transition hover:scale-105 active:scale-95 font-bold"
+          title="Click to cycle aspect ratio (9:16, 4:5, 1:1, 16:9)"
+        >
           <Crop size={11} />
           <span>{aspectRatio}</span>
-        </div>
+        </button>
 
         <!-- Subtitles Toggle Pill -->
         <button

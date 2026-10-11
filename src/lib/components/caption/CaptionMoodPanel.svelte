@@ -1,6 +1,6 @@
 <script lang="ts">
   import { clipStore, type SubtitleAnimation } from '../../stores/clip.svelte';
-  import { Sparkles, Sliders, Type, Flame, Layers, Download } from 'lucide-svelte';
+  import { Sparkles, Crop, Type, Flame, Layers, Download, Check } from 'lucide-svelte';
 
   let {
     activeTranscriptText = '',
@@ -9,6 +9,13 @@
     activeTranscriptText: string;
     onRender: () => void;
   } = $props();
+
+  const aspectRatios = [
+    { id: '9:16' as const, label: '9:16', desc: 'Shorts/TikTok/Reels' },
+    { id: '4:5' as const, label: '4:5', desc: 'IG Portrait Feed' },
+    { id: '1:1' as const, label: '1:1', desc: 'Square Post' },
+    { id: '16:9' as const, label: '16:9', desc: 'YouTube Landscape' }
+  ];
 
   const colorPalette = [
     { label: 'Electric Lime', color: '#D4FF00' },
@@ -25,11 +32,11 @@
     'POP', 'FADE', 'RISE', 'DROP', 'ZOOM', 'TYPE', 'OFF'
   ];
 
-  const words = $derived.by(() => {
-    if (!activeTranscriptText || !activeTranscriptText.trim()) {
-      return ['Virality', 'hook', 'formula', 'revealed', 'watch', 'this'];
-    }
-    return activeTranscriptText.trim().split(/\s+/).slice(0, 20);
+  // Extract unique clean words from speech dialogue
+  const uniqueWords = $derived.by(() => {
+    const text = activeTranscriptText || clipStore.analysisResult?.title || 'VIRAL HOOK FORMULA REVEALED';
+    const raw = text.split(/\s+/).map(w => w.replace(/[^a-zA-Z0-9]/g, '')).filter(w => w.length > 1);
+    return Array.from(new Set(raw)).slice(0, 30);
   });
 </script>
 
@@ -38,10 +45,38 @@
   <div class="flex items-center justify-between pb-3 border-b border-[#757D6F]/20">
     <div class="flex items-center gap-2">
       <div class="w-2.5 h-2.5 rounded-full bg-[#D4FF00] animate-pulse"></div>
-      <span class="text-xs font-mono font-bold tracking-wider text-[#EEEAD7] uppercase">CAPTION MOOD</span>
-      <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#150000] text-[#A9B3A1] border border-[#757D6F]/30">STYLE & CAPTIONS</span>
+      <span class="text-xs font-mono font-bold tracking-wider text-[#EEEAD7] uppercase">STYLE & FORMAT STUDIO</span>
+      <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#150000] text-[#A9B3A1] border border-[#757D6F]/30">PRESETS</span>
     </div>
     <span class="text-[11px] font-mono text-[#D4FF00] font-bold">● LIVE PREVIEW</span>
+  </div>
+
+  <!-- VIDEO FORMAT & ASPECT RATIO SELECTOR -->
+  <div class="flex flex-col gap-1.5 p-3 bg-[#150000] border border-[#757D6F]/30 rounded-xl">
+    <div class="flex justify-between items-center text-[11px] font-mono text-[#A9B3A1]">
+      <span class="flex items-center gap-1.5">
+        <Crop size={14} class="text-[#D4FF00]" />
+        <span>VIDEO FORMAT & ASPECT RATIO</span>
+      </span>
+      <span class="font-bold text-[#D4FF00]">{clipStore.aspectRatio}</span>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-1">
+      {#each aspectRatios as fmt}
+        <button
+          type="button"
+          onclick={() => clipStore.aspectRatio = fmt.id}
+          class="p-2 rounded-xl text-left font-mono transition-all border flex flex-col justify-between {clipStore.aspectRatio === fmt.id ? 'bg-[#6D0808] border-[#870E0E] text-[#EEEAD7] shadow-lg shadow-black/60 scale-[1.02]' : 'bg-[#2D0000]/60 border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+        >
+          <div class="flex items-center justify-between w-full">
+            <span class="text-xs font-bold">{fmt.label}</span>
+            {#if clipStore.aspectRatio === fmt.id}
+              <Check size={13} class="text-[#D4FF00]" />
+            {/if}
+          </div>
+          <span class="text-[9px] opacity-75 mt-0.5 truncate">{fmt.desc}</span>
+        </button>
+      {/each}
+    </div>
   </div>
 
   <!-- Segmented Pill: BURN SUBTITLES INTO CLIP -->
@@ -189,22 +224,22 @@
       </div>
     </div>
 
-    <!-- Interactive Word Chips (Click to highlight word) -->
+    <!-- Interactive Word Chips (Click to highlight keywords across video) -->
     <div class="flex flex-col gap-1.5 p-3 bg-[#150000] border border-[#757D6F]/30 rounded-xl">
       <div class="flex items-center justify-between text-[11px] font-mono text-[#A9B3A1]">
         <span class="flex items-center gap-1">
           <Type size={13} class="text-[#D4FF00]" />
-          CLICK WORDS TO HIGHLIGHT
+          <span>CLICK WORDS TO HIGHLIGHT (KEYWORDS)</span>
         </span>
-        <span class="text-[10px] text-[#757D6F]">{clipStore.highlightedWordIndices.length} active</span>
+        <span class="text-[10px] text-[#D4FF00] font-bold">{clipStore.highlightedWords.length} active</span>
       </div>
-      <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-        {#each words as word, idx}
-          {@const active = clipStore.highlightedWordIndices.includes(idx)}
+      <div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1">
+        {#each uniqueWords as word}
+          {@const isHighlighted = clipStore.isWordHighlighted(word)}
           <button
             type="button"
-            onclick={() => clipStore.toggleWordHighlight(idx)}
-            class="px-2 py-1 rounded-md text-xs font-mono transition {active ? 'bg-[#D4FF00] text-black font-bold shadow' : 'bg-[#2D0000] text-[#A9B3A1] hover:text-[#EEEAD7] border border-[#757D6F]/30'}"
+            onclick={() => clipStore.toggleWordHighlight(word)}
+            class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all {isHighlighted ? 'bg-[#D4FF00] text-black shadow-lg scale-105 ring-1 ring-white' : 'bg-[#2D0000] text-[#A9B3A1] hover:text-[#EEEAD7] border border-[#757D6F]/30 hover:border-[#757D6F]/60'}"
           >
             {word}
           </button>
@@ -213,7 +248,7 @@
     </div>
   {/if}
 
-  <!-- Batch Render CTA (Electric Accent Button) -->
+  <!-- Batch Render CTA (Reflecting chosen format) -->
   <button
     type="button"
     disabled={clipStore.isRendering}
@@ -221,6 +256,6 @@
     class="w-full py-3 px-4 rounded-xl font-bold font-mono text-sm tracking-wide flex items-center justify-center gap-2 transition shadow-xl bg-[#D4FF00] hover:bg-[#c7f000] text-black active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
   >
     <Download size={16} class="text-black" />
-    <span>⬇ Render Clip with Current Style</span>
+    <span>⬇ Render Clip ({clipStore.aspectRatio})</span>
   </button>
 </div>
