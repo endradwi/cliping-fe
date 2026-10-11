@@ -1,6 +1,6 @@
 <script lang="ts">
   import UrlInputField from '../components/input/UrlInputField.svelte';
-  import { analyzeVideoUrl, getPresignedUploadUrl, uploadFileToR2, analyzeUploadedVideo } from '../services/api.client';
+  import { analyzeVideoUrl, getPresignedUploadUrl, uploadFileToR2, uploadFileDirectFallback, analyzeUploadedVideo } from '../services/api.client';
   import { clipStore } from '../stores/clip.svelte';
   import { UploadCloud, Youtube, Loader2, FileVideo, Sparkles, AlertCircle } from 'lucide-svelte';
 
@@ -36,16 +36,28 @@
     clipStore.uploadFilename = file.name;
 
     try {
-      // Step 1: Get presigned upload URL directly to Cloudflare R2 (zero VPS load)
-      const { presignedUrl, publicUrl } = await getPresignedUploadUrl(
-        file.name,
-        file.type || 'video/mp4'
-      );
+      let publicUrl = '';
 
-      // Step 2: Stream file directly from browser to Cloudflare R2
-      await uploadFileToR2(presignedUrl, file, (pct) => {
-        clipStore.uploadProgress = pct;
-      });
+      // Attempt 1: Direct client-to-R2 (Fastest, zero VPS load)
+      try {
+        const { presignedUrl, publicUrl: r2Url } = await getPresignedUploadUrl(
+          file.name,
+          file.type || 'video/mp4'
+        );
+
+        await uploadFileToR2(presignedUrl, file, (pct) => {
+          clipStore.uploadProgress = pct;
+        });
+
+        publicUrl = r2Url;
+      } catch (r2Err: any) {
+        // Attempt 2: Resilient server-stream fallback (if R2 CORS policy is not active in browser)
+        console.warn('Direct R2 upload encountered CORS, activating gateway stream fallback:', r2Err);
+        const fallbackRes = await uploadFileDirectFallback(file, (pct) => {
+          clipStore.uploadProgress = pct;
+        });
+        publicUrl = fallbackRes.publicUrl;
+      }
 
       // Step 3: Trigger server-side stream probe + Groq Whisper hook analysis
       clipStore.isAnalyzing = true;

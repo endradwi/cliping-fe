@@ -64,6 +64,47 @@ export function uploadFileToR2(
   });
 }
 
+// Fallback upload directly via backend gateway (if Cloudflare R2 bucket CORS is not yet configured)
+export function uploadFileDirectFallback(
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<{ publicUrl: string; key: string }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    xhr.open('POST', `${API_BASE}/api/v1/upload/direct`);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        onProgress(pct);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const res = JSON.parse(xhr.responseText);
+          if (res.success && res.data) {
+            resolve(res.data);
+          } else {
+            reject(new Error(res.error?.message || 'Server upload processing failed'));
+          }
+        } catch (e: any) {
+          reject(e);
+        }
+      } else {
+        reject(new Error(`Server upload rejected with status ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during upload to server'));
+    xhr.send(formData);
+  });
+}
+
 // Analyze directly uploaded video from R2 URL
 export async function analyzeUploadedVideo(r2Url: string, title?: string, filename?: string): Promise<VideoAnalysisResult> {
   const res = await fetch(`${API_BASE}/api/v1/analyze/upload`, {
