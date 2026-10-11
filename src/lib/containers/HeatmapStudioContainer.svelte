@@ -4,13 +4,14 @@
   import HeatmapCurve from '../components/timeline/HeatmapCurve.svelte';
   import ClipCarouselTray from '../components/timeline/ClipCarouselTray.svelte';
   import CaptionMoodPanel from '../components/caption/CaptionMoodPanel.svelte';
-  import Badge from '../components/ui/Badge.svelte';
   import { triggerRenderClip } from '../services/api.client';
   import type { CandidateClip } from '../types';
-  import { Sparkles, Layers, ArrowRight, ShieldCheck } from 'lucide-svelte';
+  import { Layers, ArrowRight, Play, Pause, ChevronUp, Sliders } from 'lucide-svelte';
 
   let currentTime = $state(0);
   let isPlaying = $state(false);
+  let showStickyMini = $state(false);
+  let mainPlayerRef = $state<HTMLElement | null>(null);
 
   // Compute live spoken dialogue transcript for the active clip range
   let activeTranscriptLines = $derived.by(() => {
@@ -24,6 +25,17 @@
   let activeTranscriptText = $derived(
     activeTranscriptLines.map(l => l.text).join(' ').trim()
   );
+
+  // Track scroll position to auto-dock sticky mini player when scrolling down
+  function handleScroll() {
+    if (!mainPlayerRef) return;
+    const rect = mainPlayerRef.getBoundingClientRect();
+    showStickyMini = rect.bottom < 120;
+  }
+
+  function scrollToPlayer() {
+    mainPlayerRef?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   // Global Keyboard Shortcuts (Linear Style)
   function handleKeyDown(e: KeyboardEvent) {
@@ -55,6 +67,20 @@
   function handleSelectClip(clip: CandidateClip) {
     clipStore.selectClip(clip);
     currentTime = clip.start;
+  }
+
+  // Quick In/Out trim adjustment helpers
+  function adjustInPoint(delta: number) {
+    const newStart = Math.max(0, Math.min(clipStore.selectedEnd - 2, clipStore.selectedStart + delta));
+    clipStore.setManualRange(newStart, clipStore.selectedEnd);
+    currentTime = newStart;
+  }
+
+  function adjustOutPoint(delta: number) {
+    const maxDur = clipStore.analysisResult?.duration || 7200;
+    const newEnd = Math.min(maxDur, Math.max(clipStore.selectedStart + 2, clipStore.selectedEnd + delta));
+    clipStore.setManualRange(clipStore.selectedStart, newEnd);
+    currentTime = newEnd;
   }
 
   async function handleExport() {
@@ -95,10 +121,10 @@
   }
 </script>
 
-<svelte:window onkeydown={handleKeyDown} />
+<svelte:window onkeydown={handleKeyDown} onscroll={handleScroll} />
 
 {#if clipStore.analysisResult}
-  <div class="w-full max-w-6xl mx-auto mt-2 sm:mt-4 flex flex-col gap-5 sm:gap-6">
+  <div class="w-full max-w-5xl mx-auto mt-2 sm:mt-4 flex flex-col gap-6">
     <!-- Top Header Bar: DETECTED CLIPS & STATUS BADGE -->
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-[#200202]/80 border border-[#757D6F]/30 rounded-2xl backdrop-blur-md">
       <div class="min-w-0 flex-1">
@@ -156,10 +182,13 @@
       </div>
     </div>
 
-    <!-- Center Stage: 9:16 Canvas with Floating Dock & Caption Mood Inspector -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      <!-- Left: Video Canvas (lg:col-span-5) -->
-      <div class="lg:col-span-5 flex justify-center w-full">
+    <!-- ================= STAGE 1 (ATAS): THEATER VIDEO & PRECISION TIMELINE ================= -->
+    <div
+      bind:this={mainPlayerRef}
+      class="w-full flex flex-col items-center gap-5 p-4 sm:p-6 bg-[#200202]/90 border border-[#757D6F]/30 rounded-3xl backdrop-blur-xl shadow-2xl relative"
+    >
+      <!-- Large Theater Video Canvas -->
+      <div class="w-full flex justify-center">
         <VideoPreviewCanvas
           videoId={clipStore.analysisResult.videoId}
           {currentTime}
@@ -175,29 +204,138 @@
         />
       </div>
 
-      <!-- Right: Caption Mood & Subtitle Style Inspector (lg:col-span-7) -->
-      <div class="lg:col-span-7 flex flex-col gap-4 w-full">
-        <CaptionMoodPanel
-          {activeTranscriptText}
-          onRender={handleExport}
+      <!-- Precision Range Trimmer Controller (directly underneath video) -->
+      <div class="w-full max-w-2xl flex flex-col gap-2.5 p-3.5 bg-[#150000] border border-[#757D6F]/30 rounded-2xl shadow-inner font-mono text-xs">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-white/5">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-[#D4FF00]"></span>
+            <span class="text-[#A9B3A1] font-bold">TIMELINE IN/OUT CONTROLLER</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-[#757D6F] text-[11px]">CLIP DURATION:</span>
+            <span class="px-2 py-0.5 rounded bg-[#2D0000] text-[#D4FF00] font-bold border border-[#D4FF00]/30">
+              {clipStore.selectedDuration.toFixed(1)}s
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- In-Point Adjuster -->
+          <div class="flex items-center justify-between p-2.5 bg-[#200202] rounded-xl border border-[#757D6F]/25">
+            <div>
+              <span class="text-[10px] text-[#757D6F] block">START TRIM (IN-POINT)</span>
+              <span class="text-sm font-bold text-[#EEEAD7]">{clipStore.selectedStart.toFixed(1)}s</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <button
+                type="button"
+                onclick={() => adjustInPoint(-1)}
+                class="px-2 py-1 rounded bg-[#150000] text-[#A9B3A1] hover:text-white border border-[#757D6F]/30 hover:border-white/40"
+              >-1s</button>
+              <button
+                type="button"
+                onclick={() => adjustInPoint(1)}
+                class="px-2 py-1 rounded bg-[#150000] text-[#A9B3A1] hover:text-white border border-[#757D6F]/30 hover:border-white/40"
+              >+1s</button>
+            </div>
+          </div>
+
+          <!-- Out-Point Adjuster -->
+          <div class="flex items-center justify-between p-2.5 bg-[#200202] rounded-xl border border-[#757D6F]/25">
+            <div>
+              <span class="text-[10px] text-[#757D6F] block">END TRIM (OUT-POINT)</span>
+              <span class="text-sm font-bold text-[#EEEAD7]">{clipStore.selectedEnd.toFixed(1)}s</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <button
+                type="button"
+                onclick={() => adjustOutPoint(-1)}
+                class="px-2 py-1 rounded bg-[#150000] text-[#A9B3A1] hover:text-white border border-[#757D6F]/30 hover:border-white/40"
+              >-1s</button>
+              <button
+                type="button"
+                onclick={() => adjustOutPoint(1)}
+                class="px-2 py-1 rounded bg-[#150000] text-[#A9B3A1] hover:text-white border border-[#757D6F]/30 hover:border-white/40"
+              >+1s</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline Retention Heatmap Scrubber (Directly attached below range controller) -->
+      <div class="w-full">
+        <HeatmapCurve
+          points={clipStore.analysisResult.heatmapPoints}
+          duration={clipStore.analysisResult.duration}
+          {currentTime}
+          selectedStart={clipStore.selectedStart}
+          selectedEnd={clipStore.selectedEnd}
+          topClips={clipStore.currentBatchClips}
+          onSeek={(t) => currentTime = t}
         />
       </div>
     </div>
 
-    <!-- Bottom Stage 1: Horizontal Clip Carousel Tray -->
+    <!-- ================= STAGE 2 (BAWAH): CLIPS CAROUSEL TRAY ================= -->
     <ClipCarouselTray
       onSelectClip={handleSelectClip}
     />
 
-    <!-- Bottom Stage 2: Heatmap Retention Curve & Scrubber -->
-    <HeatmapCurve
-      points={clipStore.analysisResult.heatmapPoints}
-      duration={clipStore.analysisResult.duration}
-      {currentTime}
-      selectedStart={clipStore.selectedStart}
-      selectedEnd={clipStore.selectedEnd}
-      topClips={clipStore.currentBatchClips}
-      onSeek={(t) => currentTime = t}
+    <!-- ================= STAGE 3 (BAWAH): EDITING & CAPTION MOOD STUDIO ================= -->
+    <CaptionMoodPanel
+      {activeTranscriptText}
+      onRender={handleExport}
     />
   </div>
+
+  <!-- STICKY FLOATING MINI-DOCK (Appears when scrolling down to customize captions) -->
+  {#if showStickyMini}
+    <div class="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2 animate-in fade-in slide-in-from-bottom-5 duration-300">
+      <div class="w-56 sm:w-64 bg-black/95 rounded-2xl overflow-hidden border-2 border-[#D4FF00] shadow-2xl backdrop-blur-xl p-2.5 flex flex-col gap-2">
+        <div class="flex items-center justify-between px-1">
+          <span class="text-[10px] font-mono text-[#D4FF00] font-bold">● LIVE MINI PREVIEW</span>
+          <button
+            type="button"
+            onclick={scrollToPlayer}
+            class="text-[10px] font-mono text-white/70 hover:text-white flex items-center gap-0.5 hover:underline"
+            title="Scroll back to main player"
+          >
+            <span>Top</span>
+            <ChevronUp size={12} />
+          </button>
+        </div>
+
+        <!-- Mini Live Subtitle Display -->
+        <div class="p-3 bg-[#150000] rounded-xl border border-white/10 text-center select-none">
+          <span
+            class="inline-block font-black text-xs uppercase leading-tight"
+            style="color: {clipStore.subtitleColor}; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.9));"
+          >
+            {activeTranscriptText.slice(0, 35) || 'LIVE SUBTITLE STREAM'}
+          </span>
+          <span class="block text-[9px] font-mono text-white/50 mt-1">
+            Format: {clipStore.aspectRatio} • {clipStore.subtitleAnimation}
+          </span>
+        </div>
+
+        <div class="flex items-center justify-between px-1">
+          <button
+            type="button"
+            onclick={() => isPlaying = !isPlaying}
+            class="w-6 h-6 rounded-full bg-[#D4FF00] text-black font-bold flex items-center justify-center hover:scale-105"
+          >
+            {#if isPlaying}
+              <Pause size={12} class="fill-black" />
+            {:else}
+              <Play size={12} class="fill-black ml-0.5" />
+            {/if}
+          </button>
+          <span class="text-[10px] font-mono text-white/70">
+            {currentTime.toFixed(0)}s / {clipStore.selectedDuration.toFixed(0)}s
+          </span>
+        </div>
+      </div>
+    </div>
+  {/if}
 {/if}

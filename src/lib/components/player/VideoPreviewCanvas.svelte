@@ -30,18 +30,18 @@
 
   let videoElement = $state<HTMLVideoElement | null>(null);
 
-  // Responsive frame dimensions avoiding any column overflow
+  // Responsive frame dimensions avoiding any column overflow - Theater Scale
   const frameClass = $derived.by(() => {
     switch (aspectRatio) {
       case '16:9':
-        return 'w-full max-w-[440px] aspect-[16/9]';
+        return 'w-full max-w-[680px] aspect-[16/9]';
       case '1:1':
-        return 'w-[280px] sm:w-[320px] aspect-square';
+        return 'w-[360px] sm:w-[440px] aspect-square';
       case '4:5':
-        return 'w-[270px] sm:w-[310px] aspect-[4/5]';
+        return 'w-[340px] sm:w-[400px] aspect-[4/5]';
       case '9:16':
       default:
-        return 'w-[260px] sm:w-[290px] h-[460px] sm:h-[515px]';
+        return 'w-[300px] sm:w-[350px] md:w-[380px] h-[530px] sm:h-[620px] md:h-[675px]';
     }
   });
 
