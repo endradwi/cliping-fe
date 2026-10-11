@@ -6,12 +6,11 @@
   import CaptionMoodPanel from '../components/caption/CaptionMoodPanel.svelte';
   import { triggerRenderClip } from '../services/api.client';
   import type { CandidateClip } from '../types';
-  import { Layers, ArrowRight, Play, Pause, ChevronUp, Sliders } from 'lucide-svelte';
+  import { Layers, ArrowRight, Sparkles, Film, Crop, Check } from 'lucide-svelte';
 
   let currentTime = $state(0);
   let isPlaying = $state(false);
-  let showStickyMini = $state(false);
-  let mainPlayerRef = $state<HTMLElement | null>(null);
+  let activeTab = $state<'caption' | 'clips' | 'format'>('caption');
 
   // Compute live spoken dialogue transcript for the active clip range
   let activeTranscriptLines = $derived.by(() => {
@@ -25,17 +24,6 @@
   let activeTranscriptText = $derived(
     activeTranscriptLines.map(l => l.text).join(' ').trim()
   );
-
-  // Track scroll position to auto-dock sticky mini player when scrolling down
-  function handleScroll() {
-    if (!mainPlayerRef) return;
-    const rect = mainPlayerRef.getBoundingClientRect();
-    showStickyMini = rect.bottom < 120;
-  }
-
-  function scrollToPlayer() {
-    mainPlayerRef?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
 
   // Global Keyboard Shortcuts (Linear Style)
   function handleKeyDown(e: KeyboardEvent) {
@@ -69,7 +57,6 @@
     currentTime = clip.start;
   }
 
-  // Quick In/Out trim adjustment helpers
   function adjustInPoint(delta: number) {
     const newStart = Math.max(0, Math.min(clipStore.selectedEnd - 2, clipStore.selectedStart + delta));
     clipStore.setManualRange(newStart, clipStore.selectedEnd);
@@ -119,40 +106,35 @@
       clipStore.renderProgress = null;
     }
   }
+
+  const aspectRatios = [
+    { id: '9:16' as const, label: '9:16', desc: 'Shorts / TikTok / Reels' },
+    { id: '4:5' as const, label: '4:5', desc: 'Instagram Portrait Feed' },
+    { id: '1:1' as const, label: '1:1', desc: 'Square Post / Carousel' },
+    { id: '16:9' as const, label: '16:9', desc: 'YouTube Standard Landscape' }
+  ];
 </script>
 
-<svelte:window onkeydown={handleKeyDown} onscroll={handleScroll} />
+<svelte:window onkeydown={handleKeyDown} />
 
 {#if clipStore.analysisResult}
-  <div class="w-full max-w-5xl mx-auto mt-2 sm:mt-4 flex flex-col gap-6">
-    <!-- Top Header Bar: DETECTED CLIPS & STATUS BADGE -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-[#200202]/80 border border-[#757D6F]/30 rounded-2xl backdrop-blur-md">
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2 mb-1">
-          <!-- Licensed / Telemetry Ready Badge -->
-          <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#150000] border border-[#D4FF00]/40 text-[#D4FF00] text-[11px] font-mono font-bold">
-            <span class="w-2 h-2 rounded-full bg-[#D4FF00]"></span>
-            <span>● LICENSED</span>
-          </div>
-
-          <span class="text-xs text-[#A9B3A1] font-mono truncate">{clipStore.analysisResult.channel}</span>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <h2 class="text-base sm:text-lg font-black tracking-tight text-[#EEEAD7] font-mono uppercase">
-            DETECTED CLIPS {clipStore.analysisResult.topClips.length}
-          </h2>
-          <span class="text-xs text-[#757D6F] font-mono hidden md:inline truncate max-w-md">
-            · {clipStore.analysisResult.title}
-          </span>
-        </div>
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4">
+    <!-- Top Minimalist Breadcrumb Bar -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-[#200202]/70 border border-[#757D6F]/25 rounded-2xl backdrop-blur-md font-mono text-xs shadow-lg">
+      <div class="flex items-center gap-2.5 min-w-0 flex-1">
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#150000] border border-[#D4FF00]/40 text-[#D4FF00] font-bold text-[10px]">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#D4FF00]"></span>
+          <span>READY</span>
+        </span>
+        <span class="text-[#EEEAD7] font-bold truncate max-w-md">{clipStore.analysisResult.title}</span>
+        <span class="text-[#757D6F] hidden md:inline truncate">({clipStore.analysisResult.channel})</span>
       </div>
 
-      <!-- Batch Switcher -->
-      <div class="flex items-center gap-1.5 p-1 bg-[#150000] border border-[#757D6F]/30 rounded-xl overflow-x-auto self-stretch sm:self-auto">
-        <div class="flex items-center gap-1 px-2 text-[11px] font-mono text-[#A9B3A1]">
+      <!-- Quick Batch Navigation -->
+      <div class="flex items-center gap-1.5 p-1 bg-[#150000] border border-[#757D6F]/25 rounded-xl self-stretch sm:self-auto">
+        <div class="flex items-center gap-1 px-1.5 text-[11px] text-[#A9B3A1]">
           <Layers size={13} class="text-[#EEEAD7]" />
-          <span class="hidden sm:inline">BATCH:</span>
+          <span>BATCH:</span>
         </div>
         {#each Array.from({ length: clipStore.totalBatches }, (_, i) => i + 1) as b}
           <button
@@ -161,9 +143,9 @@
               clipStore.setBatch(b);
               currentTime = clipStore.selectedStart;
             }}
-            class="px-2.5 py-1 rounded-lg text-xs font-mono transition whitespace-nowrap {clipStore.currentBatch === b ? 'bg-[#D4FF00] text-black font-bold shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+            class="px-2 py-0.5 rounded-lg text-xs transition {clipStore.currentBatch === b ? 'bg-[#D4FF00] text-black font-bold shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
           >
-            Batch {b}
+            {b}
           </button>
         {/each}
         {#if clipStore.totalBatches > 1}
@@ -173,169 +155,167 @@
               clipStore.nextBatch();
               currentTime = clipStore.selectedStart;
             }}
-            class="p-1 rounded-lg text-xs font-mono text-[#EEEAD7] hover:bg-[#2D0000] transition ml-1"
-            title="Jump to Next Batch"
+            class="p-1 rounded-lg text-[#EEEAD7] hover:bg-[#2D0000] transition"
+            title="Next Batch"
           >
-            <ArrowRight size={14} />
+            <ArrowRight size={13} />
           </button>
         {/if}
       </div>
     </div>
 
-    <!-- ================= STAGE 1 (ATAS): THEATER VIDEO & PRECISION TIMELINE ================= -->
-    <div
-      bind:this={mainPlayerRef}
-      class="w-full flex flex-col items-center gap-5 p-4 sm:p-6 bg-[#200202]/90 border border-[#757D6F]/30 rounded-3xl backdrop-blur-xl shadow-2xl relative"
-    >
-      <!-- Large Theater Video Canvas -->
-      <div class="w-full flex justify-center">
-        <VideoPreviewCanvas
-          videoId={clipStore.analysisResult.videoId}
-          {currentTime}
-          {isPlaying}
-          burnSubtitles={clipStore.burnSubtitles}
-          aspectRatio={clipStore.aspectRatio}
-          clipStart={clipStore.selectedStart}
-          clipEnd={clipStore.selectedEnd}
-          onTogglePlay={() => isPlaying = !isPlaying}
-          onToggleSubtitles={() => clipStore.burnSubtitles = !clipStore.burnSubtitles}
-          onSeekRelative={handleSeekRelative}
-          onTimeUpdate={(t) => currentTime = t}
-        />
-      </div>
+    <!-- MAIN TWO-COLUMN STUDIO WORKSPACE (Balanced Widescreen Layout) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      <!-- LEFT STAGE: Video Canvas & Attached Timeline (lg:col-span-5) -->
+      <div class="lg:col-span-5 flex flex-col items-center gap-3 p-3.5 sm:p-4 bg-[#200202]/80 border border-[#757D6F]/25 rounded-2xl shadow-xl w-full">
+        <!-- Sleek Phone Canvas -->
+        <div class="w-full flex justify-center">
+          <VideoPreviewCanvas
+            videoId={clipStore.analysisResult.videoId}
+            {currentTime}
+            {isPlaying}
+            burnSubtitles={clipStore.burnSubtitles}
+            aspectRatio={clipStore.aspectRatio}
+            clipStart={clipStore.selectedStart}
+            clipEnd={clipStore.selectedEnd}
+            onTogglePlay={() => isPlaying = !isPlaying}
+            onToggleSubtitles={() => clipStore.burnSubtitles = !clipStore.burnSubtitles}
+            onSeekRelative={handleSeekRelative}
+            onTimeUpdate={(t) => currentTime = t}
+          />
+        </div>
 
-      <!-- Precision Range Trimmer Controller (directly underneath video) -->
-      <div class="w-full max-w-2xl flex flex-col gap-2.5 p-3.5 bg-[#150000] border border-[#757D6F]/30 rounded-2xl shadow-inner font-mono text-xs">
-        <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-white/5">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-[#D4FF00]"></span>
-            <span class="text-[#A9B3A1] font-bold">TIMELINE IN/OUT CONTROLLER</span>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <span class="text-[#757D6F] text-[11px]">CLIP DURATION:</span>
-            <span class="px-2 py-0.5 rounded bg-[#2D0000] text-[#D4FF00] font-bold border border-[#D4FF00]/30">
-              {clipStore.selectedDuration.toFixed(1)}s
+        <!-- Attached In/Out Range Trimmer Bar -->
+        <div class="w-full flex flex-col gap-2 p-2.5 bg-[#150000] border border-[#757D6F]/25 rounded-xl font-mono text-[11px]">
+          <div class="flex items-center justify-between text-[#A9B3A1]">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[#757D6F]">TRIM:</span>
+              <span class="text-[#D4FF00] font-bold">{clipStore.selectedStart.toFixed(1)}s</span>
+              <span>➔</span>
+              <span class="text-[#D4FF00] font-bold">{clipStore.selectedEnd.toFixed(1)}s</span>
+            </div>
+            <span class="px-1.5 py-0.2 rounded bg-[#2D0000] text-[#EEEAD7] font-bold border border-[#757D6F]/30 text-[10px]">
+              {clipStore.selectedDuration.toFixed(1)}s DURATION
             </span>
           </div>
+
+          <!-- Micro Trim Adjusters -->
+          <div class="grid grid-cols-2 gap-2 text-[10px]">
+            <div class="flex items-center justify-between px-2 py-1 bg-[#200202] rounded-lg border border-[#757D6F]/20">
+              <span class="text-[#757D6F]">START</span>
+              <div class="flex gap-1">
+                <button type="button" onclick={() => adjustInPoint(-1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
+                <button type="button" onclick={() => adjustInPoint(1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between px-2 py-1 bg-[#200202] rounded-lg border border-[#757D6F]/20">
+              <span class="text-[#757D6F]">END</span>
+              <div class="flex gap-1">
+                <button type="button" onclick={() => adjustOutPoint(-1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
+                <button type="button" onclick={() => adjustOutPoint(1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <!-- In-Point Adjuster -->
-          <div class="flex items-center justify-between p-2.5 bg-[#200202] rounded-xl border border-[#757D6F]/25">
-            <div>
-              <span class="text-[10px] text-[#757D6F] block">START TRIM (IN-POINT)</span>
-              <span class="text-sm font-bold text-[#EEEAD7]">{clipStore.selectedStart.toFixed(1)}s</span>
-            </div>
-            <div class="flex items-center gap-1">
-              <button
-                type="button"
-                onclick={() => adjustInPoint(-1)}
-                class="px-2 py-1 rounded bg-[#150000] text-[#A9B3A1] hover:text-white border border-[#757D6F]/30 hover:border-white/40"
-              >-1s</button>
-              <button
-                type="button"
-                onclick={() => adjustInPoint(1)}
-                class="px-2 py-1 rounded bg-[#150000] text-[#A9B3A1] hover:text-white border border-[#757D6F]/30 hover:border-white/40"
-              >+1s</button>
-            </div>
-          </div>
-
-          <!-- Out-Point Adjuster -->
-          <div class="flex items-center justify-between p-2.5 bg-[#200202] rounded-xl border border-[#757D6F]/25">
-            <div>
-              <span class="text-[10px] text-[#757D6F] block">END TRIM (OUT-POINT)</span>
-              <span class="text-sm font-bold text-[#EEEAD7]">{clipStore.selectedEnd.toFixed(1)}s</span>
-            </div>
-            <div class="flex items-center gap-1">
-              <button
-                type="button"
-                onclick={() => adjustOutPoint(-1)}
-                class="px-2 py-1 rounded bg-[#150000] text-[#A9B3A1] hover:text-white border border-[#757D6F]/30 hover:border-white/40"
-              >-1s</button>
-              <button
-                type="button"
-                onclick={() => adjustOutPoint(1)}
-                class="px-2 py-1 rounded bg-[#150000] text-[#A9B3A1] hover:text-white border border-[#757D6F]/30 hover:border-white/40"
-              >+1s</button>
-            </div>
-          </div>
+        <!-- Attached Heatmap Retention Timeline Track -->
+        <div class="w-full">
+          <HeatmapCurve
+            points={clipStore.analysisResult.heatmapPoints}
+            duration={clipStore.analysisResult.duration}
+            {currentTime}
+            selectedStart={clipStore.selectedStart}
+            selectedEnd={clipStore.selectedEnd}
+            topClips={clipStore.currentBatchClips}
+            onSeek={(t) => currentTime = t}
+          />
         </div>
       </div>
 
-      <!-- Timeline Retention Heatmap Scrubber (Directly attached below range controller) -->
-      <div class="w-full">
-        <HeatmapCurve
-          points={clipStore.analysisResult.heatmapPoints}
-          duration={clipStore.analysisResult.duration}
-          {currentTime}
-          selectedStart={clipStore.selectedStart}
-          selectedEnd={clipStore.selectedEnd}
-          topClips={clipStore.currentBatchClips}
-          onSeek={(t) => currentTime = t}
-        />
+      <!-- RIGHT STAGE: Inspector & Studio Controls (lg:col-span-7) -->
+      <div class="lg:col-span-7 flex flex-col gap-3 w-full">
+        <!-- Studio Tab Switchers -->
+        <div class="grid grid-cols-3 p-1 bg-[#150000] border border-[#757D6F]/30 rounded-2xl font-mono text-xs shadow-lg">
+          <button
+            type="button"
+            onclick={() => activeTab = 'caption'}
+            class="py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 {activeTab === 'caption' ? 'bg-[#D4FF00] text-black font-bold shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+          >
+            <Sparkles size={14} />
+            <span>Caption Mood</span>
+          </button>
+
+          <button
+            type="button"
+            onclick={() => activeTab = 'clips'}
+            class="py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 {activeTab === 'clips' ? 'bg-[#D4FF00] text-black font-bold shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+          >
+            <Film size={14} />
+            <span>Clips ({clipStore.analysisResult.topClips.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onclick={() => activeTab = 'format'}
+            class="py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 {activeTab === 'format' ? 'bg-[#D4FF00] text-black font-bold shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+          >
+            <Crop size={14} />
+            <span>Format ({clipStore.aspectRatio})</span>
+          </button>
+        </div>
+
+        <!-- Tab 1: Caption Mood Studio -->
+        {#if activeTab === 'caption'}
+          <CaptionMoodPanel
+            {activeTranscriptText}
+            onRender={handleExport}
+          />
+
+        <!-- Tab 2: Detected Clips & Bulk Export -->
+        {:else if activeTab === 'clips'}
+          <div class="flex flex-col gap-3">
+            <ClipCarouselTray
+              onSelectClip={handleSelectClip}
+            />
+          </div>
+
+        <!-- Tab 3: Aspect Ratio & Canvas Format -->
+        {:else if activeTab === 'format'}
+          <div class="p-5 bg-[#200202]/80 border border-[#757D6F]/30 rounded-2xl backdrop-blur-md shadow-xl flex flex-col gap-4 text-[#EEEAD7]">
+            <div class="flex items-center justify-between pb-3 border-b border-[#757D6F]/20">
+              <span class="text-xs font-mono font-bold tracking-wider uppercase">SELECT VIDEO ASPECT RATIO</span>
+              <span class="text-xs font-mono text-[#D4FF00] font-bold">{clipStore.aspectRatio} ACTIVE</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {#each aspectRatios as fmt}
+                <button
+                  type="button"
+                  onclick={() => clipStore.aspectRatio = fmt.id}
+                  class="p-4 rounded-xl text-left font-mono transition-all border flex flex-col justify-between gap-2 {clipStore.aspectRatio === fmt.id ? 'bg-[#6D0808] border-[#D4FF00] text-[#EEEAD7] shadow-xl scale-[1.02]' : 'bg-[#150000] border-[#757D6F]/25 text-[#A9B3A1] hover:text-[#EEEAD7] hover:border-[#757D6F]/60'}"
+                >
+                  <div class="flex items-center justify-between w-full">
+                    <span class="text-sm font-bold">{fmt.label}</span>
+                    {#if clipStore.aspectRatio === fmt.id}
+                      <Check size={16} class="text-[#D4FF00]" />
+                    {/if}
+                  </div>
+                  <span class="text-xs opacity-80">{fmt.desc}</span>
+                </button>
+              {/each}
+            </div>
+
+            <button
+              type="button"
+              disabled={clipStore.isRendering}
+              onclick={handleExport}
+              class="w-full mt-2 py-3 px-4 rounded-xl font-bold font-mono text-sm tracking-wide flex items-center justify-center gap-2 transition shadow-xl bg-[#D4FF00] hover:bg-[#c7f000] text-black active:scale-[0.99] disabled:opacity-50"
+            >
+              <span>⬇ Render Clip ({clipStore.aspectRatio})</span>
+            </button>
+          </div>
+        {/if}
       </div>
     </div>
-
-    <!-- ================= STAGE 2 (BAWAH): CLIPS CAROUSEL TRAY ================= -->
-    <ClipCarouselTray
-      onSelectClip={handleSelectClip}
-    />
-
-    <!-- ================= STAGE 3 (BAWAH): EDITING & CAPTION MOOD STUDIO ================= -->
-    <CaptionMoodPanel
-      {activeTranscriptText}
-      onRender={handleExport}
-    />
   </div>
-
-  <!-- STICKY FLOATING MINI-DOCK (Appears when scrolling down to customize captions) -->
-  {#if showStickyMini}
-    <div class="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2 animate-in fade-in slide-in-from-bottom-5 duration-300">
-      <div class="w-56 sm:w-64 bg-black/95 rounded-2xl overflow-hidden border-2 border-[#D4FF00] shadow-2xl backdrop-blur-xl p-2.5 flex flex-col gap-2">
-        <div class="flex items-center justify-between px-1">
-          <span class="text-[10px] font-mono text-[#D4FF00] font-bold">● LIVE MINI PREVIEW</span>
-          <button
-            type="button"
-            onclick={scrollToPlayer}
-            class="text-[10px] font-mono text-white/70 hover:text-white flex items-center gap-0.5 hover:underline"
-            title="Scroll back to main player"
-          >
-            <span>Top</span>
-            <ChevronUp size={12} />
-          </button>
-        </div>
-
-        <!-- Mini Live Subtitle Display -->
-        <div class="p-3 bg-[#150000] rounded-xl border border-white/10 text-center select-none">
-          <span
-            class="inline-block font-black text-xs uppercase leading-tight"
-            style="color: {clipStore.subtitleColor}; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.9));"
-          >
-            {activeTranscriptText.slice(0, 35) || 'LIVE SUBTITLE STREAM'}
-          </span>
-          <span class="block text-[9px] font-mono text-white/50 mt-1">
-            Format: {clipStore.aspectRatio} • {clipStore.subtitleAnimation}
-          </span>
-        </div>
-
-        <div class="flex items-center justify-between px-1">
-          <button
-            type="button"
-            onclick={() => isPlaying = !isPlaying}
-            class="w-6 h-6 rounded-full bg-[#D4FF00] text-black font-bold flex items-center justify-center hover:scale-105"
-          >
-            {#if isPlaying}
-              <Pause size={12} class="fill-black" />
-            {:else}
-              <Play size={12} class="fill-black ml-0.5" />
-            {/if}
-          </button>
-          <span class="text-[10px] font-mono text-white/70">
-            {currentTime.toFixed(0)}s / {clipStore.selectedDuration.toFixed(0)}s
-          </span>
-        </div>
-      </div>
-    </div>
-  {/if}
 {/if}

@@ -20,7 +20,7 @@
   } = $props();
 
   const svgWidth = 800;
-  const svgHeight = 70;
+  const svgHeight = 54;
 
   // Build SVG path
   let pathD = $derived.by(() => {
@@ -69,7 +69,7 @@
       if (e.key === 'ArrowLeft') onSeek(Math.max(0, currentTime - 5));
       if (e.key === 'ArrowRight') onSeek(Math.min(duration, currentTime + 5));
     }}
-    class="relative h-[70px] w-full cursor-pointer overflow-hidden rounded-lg bg-[#150000]/80 border border-[#757D6F]/20"
+    class="relative h-[54px] w-full cursor-pointer overflow-hidden rounded-lg bg-[#150000]/80 border border-[#757D6F]/20"
   >
     <!-- SVG Heatmap Curve with Crimson Gradient -->
     <svg viewBox="0 0 {svgWidth} {svgHeight}" preserveAspectRatio="none" class="absolute inset-0 w-full h-full">
