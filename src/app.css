@@ -6,10 +6,13 @@
   color-scheme: dark;
 }
 
+html,
 body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
   background-color: #150000;
   color: #EEEAD7;
-  overflow-x: hidden;
 }
 
 /* Custom scrollbar matching Color Hunt palette */

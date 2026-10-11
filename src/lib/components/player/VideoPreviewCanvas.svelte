@@ -35,14 +35,14 @@
   const frameClass = $derived.by(() => {
     switch (aspectRatio) {
       case '16:9':
-        return 'w-full max-w-[560px] aspect-[16/9]';
+        return 'w-full max-w-[460px] aspect-[16/9] max-h-[46vh]';
       case '1:1':
-        return 'w-[300px] sm:w-[360px] md:w-[400px] aspect-square';
+        return 'w-auto h-[44vh] max-h-[380px] aspect-square';
       case '4:5':
-        return 'w-[280px] sm:w-[340px] md:w-[380px] aspect-[4/5]';
+        return 'w-auto h-[48vh] max-h-[420px] aspect-[4/5]';
       case '9:16':
       default:
-        return 'w-[260px] sm:w-[300px] md:w-[340px] lg:w-[360px] xl:w-[380px] h-[462px] sm:h-[533px] md:h-[604px] lg:h-[640px] xl:h-[675px]';
+        return 'w-auto h-[48vh] max-h-[430px] aspect-[9/16]';
     }
   });
 

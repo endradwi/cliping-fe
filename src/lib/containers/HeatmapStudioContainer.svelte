@@ -6,7 +6,7 @@
   import CaptionMoodPanel from '../components/caption/CaptionMoodPanel.svelte';
   import { triggerRenderClip } from '../services/api.client';
   import type { CandidateClip } from '../types';
-  import { Film, SlidersHorizontal, Flame } from 'lucide-svelte';
+  import { Film, SlidersHorizontal, Flame, RotateCcw } from 'lucide-svelte';
 
   let currentTime = $state(0);
   let isPlaying = $state(false);
@@ -115,41 +115,50 @@
 <svelte:window onkeydown={handleKeyDown} />
 
 {#if clipStore.analysisResult}
-  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4">
-    <!-- Top Minimalist Studio Header & Clip Switcher Strip -->
-    <div class="flex flex-col gap-2.5 p-3.5 bg-[#200202]/70 border border-[#757D6F]/25 rounded-2xl backdrop-blur-md font-mono text-xs shadow-lg">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+  <div class="w-full h-full flex flex-col gap-2 overflow-hidden">
+    <!-- Top Minimalist Studio Header & Clip Switcher Strip (Zero Window Scroll) -->
+    <div class="flex-shrink-0 flex flex-col gap-1.5 p-2.5 bg-[#200202]/70 border border-[#757D6F]/25 rounded-2xl backdrop-blur-md font-mono text-xs shadow-md">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0 flex-1">
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#150000] border border-[#D4FF00]/40 text-[#D4FF00] font-bold text-[10px]">
             <span class="w-1.5 h-1.5 rounded-full bg-[#D4FF00]"></span>
             <span>READY</span>
           </span>
           <span class="text-[#EEEAD7] font-bold truncate max-w-md">{clipStore.analysisResult.title}</span>
+          <button
+            type="button"
+            onclick={() => clipStore.reset()}
+            class="text-[10px] text-[#A9B3A1] hover:text-[#EEEAD7] underline ml-2 flex items-center gap-1"
+            title="Muat video lain"
+          >
+            <RotateCcw size={11} />
+            <span>Ganti Video</span>
+          </button>
         </div>
 
         <!-- Studio Mode Selector -->
-        <div class="flex items-center gap-1.5 p-1 bg-[#150000] border border-[#757D6F]/25 rounded-xl self-stretch sm:self-auto">
+        <div class="flex items-center gap-1 p-0.5 bg-[#150000] border border-[#757D6F]/25 rounded-xl">
           <button
             type="button"
             onclick={() => activeTab = 'editor'}
-            class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {activeTab === 'editor' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+            class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {activeTab === 'editor' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
           >
-            <SlidersHorizontal size={13} />
+            <SlidersHorizontal size={12} />
             <span>Editor Studio</span>
           </button>
           <button
             type="button"
             onclick={() => activeTab = 'gallery'}
-            class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {activeTab === 'gallery' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
+            class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {activeTab === 'gallery' ? 'bg-[#D4FF00] text-black shadow' : 'text-[#A9B3A1] hover:text-[#EEEAD7]'}"
           >
-            <Film size={13} />
+            <Film size={12} />
             <span>Semua Klip ({clipStore.analysisResult.topClips.length})</span>
           </button>
         </div>
       </div>
 
       <!-- Quick One-Click Clip Selector Strip (SOCL Visuals Style) -->
-      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 border-t border-[#757D6F]/15">
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-1 border-t border-[#757D6F]/15">
         <span class="text-[10px] text-[#A9B3A1] font-bold flex-shrink-0 flex items-center gap-1">
           <Flame size={12} class="text-[#D4FF00]" />
           <span>PILIH KLIP:</span>
@@ -159,7 +168,7 @@
           <button
             type="button"
             onclick={() => handleSelectClip(clip)}
-            class="px-2.5 py-1 rounded-lg text-[10px] font-bold flex-shrink-0 transition border flex items-center gap-1.5 {isActive ? 'bg-[#D4FF00] text-black border-[#D4FF00] shadow-md scale-105' : 'bg-[#150000] text-[#A9B3A1] hover:text-[#EEEAD7] border-[#757D6F]/30 hover:border-[#757D6F]/60'}"
+            class="px-2 py-0.5 rounded-lg text-[10px] font-bold flex-shrink-0 transition border flex items-center gap-1 {isActive ? 'bg-[#D4FF00] text-black border-[#D4FF00] shadow-md scale-105' : 'bg-[#150000] text-[#A9B3A1] hover:text-[#EEEAD7] border-[#757D6F]/30 hover:border-[#757D6F]/60'}"
           >
             <span>#{clip.rank}</span>
             <span class="opacity-80">({clip.score})</span>
@@ -174,12 +183,12 @@
     </div>
 
     {#if activeTab === 'editor'}
-      <!-- MAIN TWO-COLUMN STUDIO WORKSPACE (Spacious SOCL Visuals Layout) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <!-- LEFT COLUMN: Sticky Stage (Canvas & Timeline) -->
-        <div class="lg:col-span-5 flex flex-col items-center gap-3 p-3.5 sm:p-4 bg-[#200202]/80 border border-[#757D6F]/25 rounded-2xl shadow-xl w-full sticky top-16">
-          <!-- Video Preview Canvas -->
-          <div class="w-full flex justify-center">
+      <!-- MAIN TWO-COLUMN STUDIO WORKSPACE (Strict Viewport Boundary, Zero Body Scroll) -->
+      <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 h-full overflow-hidden">
+        <!-- LEFT COLUMN: Stage (Canvas & Timeline) -->
+        <div class="lg:col-span-5 xl:col-span-5 h-full flex flex-col items-center justify-between gap-2 p-2.5 bg-[#200202]/80 border border-[#757D6F]/25 rounded-2xl shadow-xl overflow-hidden">
+          <!-- Video Preview Canvas (Dynamically scaled within available stage height) -->
+          <div class="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
             <VideoPreviewCanvas
               videoId={clipStore.analysisResult.videoId}
               {currentTime}
@@ -196,7 +205,7 @@
           </div>
 
           <!-- Precision Trimmer Bar -->
-          <div class="w-full flex flex-col gap-2 p-2.5 bg-[#150000] border border-[#757D6F]/25 rounded-xl font-mono text-[11px]">
+          <div class="flex-shrink-0 w-full flex flex-col gap-1 p-2 bg-[#150000] border border-[#757D6F]/25 rounded-xl font-mono text-[10px]">
             <div class="flex items-center justify-between text-[#A9B3A1]">
               <div class="flex items-center gap-1.5">
                 <span class="text-[#757D6F]">RENTANG:</span>
@@ -204,32 +213,32 @@
                 <span>➔</span>
                 <span class="text-[#D4FF00] font-bold">{clipStore.selectedEnd.toFixed(1)}s</span>
               </div>
-              <span class="px-1.5 py-0.2 rounded bg-[#2D0000] text-[#EEEAD7] font-bold border border-[#757D6F]/30 text-[10px]">
+              <span class="px-1.5 py-0.2 rounded bg-[#2D0000] text-[#EEEAD7] font-bold border border-[#757D6F]/30 text-[9px]">
                 {clipStore.selectedDuration.toFixed(1)}s DURASI
               </span>
             </div>
 
             <!-- Micro Trim Adjusters -->
-            <div class="grid grid-cols-2 gap-2 text-[10px]">
-              <div class="flex items-center justify-between px-2 py-1 bg-[#200202] rounded-lg border border-[#757D6F]/20">
+            <div class="grid grid-cols-2 gap-1.5 text-[10px]">
+              <div class="flex items-center justify-between px-2 py-0.5 bg-[#200202] rounded-lg border border-[#757D6F]/20">
                 <span class="text-[#757D6F]">START</span>
                 <div class="flex gap-1">
-                  <button type="button" onclick={() => adjustInPoint(-1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
-                  <button type="button" onclick={() => adjustInPoint(1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
+                  <button type="button" onclick={() => adjustInPoint(-1)} class="px-1.5 py-0.2 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
+                  <button type="button" onclick={() => adjustInPoint(1)} class="px-1.5 py-0.2 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
                 </div>
               </div>
-              <div class="flex items-center justify-between px-2 py-1 bg-[#200202] rounded-lg border border-[#757D6F]/20">
+              <div class="flex items-center justify-between px-2 py-0.5 bg-[#200202] rounded-lg border border-[#757D6F]/20">
                 <span class="text-[#757D6F]">END</span>
                 <div class="flex gap-1">
-                  <button type="button" onclick={() => adjustOutPoint(-1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
-                  <button type="button" onclick={() => adjustOutPoint(1)} class="px-1.5 py-0.5 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
+                  <button type="button" onclick={() => adjustOutPoint(-1)} class="px-1.5 py-0.2 rounded bg-[#150000] text-white/80 hover:text-white">-1s</button>
+                  <button type="button" onclick={() => adjustOutPoint(1)} class="px-1.5 py-0.2 rounded bg-[#150000] text-white/80 hover:text-white">+1s</button>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Heatmap Timeline -->
-          <div class="w-full">
+          <div class="flex-shrink-0 w-full">
             <HeatmapCurve
               points={clipStore.analysisResult.heatmapPoints}
               duration={clipStore.analysisResult.duration}
@@ -242,17 +251,19 @@
           </div>
         </div>
 
-        <!-- RIGHT COLUMN: Inspector Studio Controls (Scrollable Independent Container) -->
-        <div class="lg:col-span-7 xl:col-span-7 flex flex-col gap-4 w-full lg:max-h-[calc(100vh-130px)] lg:overflow-y-auto pr-1">
-          <CaptionMoodPanel
-            {activeTranscriptText}
-            onRender={handleExport}
-          />
+        <!-- RIGHT COLUMN: Inspector Studio Controls (Scrolls independently!) -->
+        <div class="lg:col-span-7 xl:col-span-7 h-full flex flex-col overflow-hidden bg-[#200202]/30 border border-[#757D6F]/20 rounded-2xl p-2.5">
+          <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+            <CaptionMoodPanel
+              {activeTranscriptText}
+              onRender={handleExport}
+            />
+          </div>
         </div>
       </div>
     {:else}
       <!-- ALL CLIPS GALLERY & BULK EXPORT VIEW -->
-      <div class="flex flex-col gap-4">
+      <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">
         <ClipCarouselTray
           onSelectClip={(c) => {
             handleSelectClip(c);
