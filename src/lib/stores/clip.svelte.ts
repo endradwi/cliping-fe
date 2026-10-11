@@ -33,7 +33,6 @@ class ClipStudioStore {
   subtitleFontSize = $state<number>(28);
   subtitlePosY = $state<number>(80); // percentage from top
   wordsPerChunk = $state<number>(2);
-  highlightedWords = $state<string[]>([]); // keywords to highlight permanently across video
   clipFilter = $state<'all' | 'hot' | 'downloaded'>('all');
   
   // Bulk Download state
@@ -88,7 +87,6 @@ class ClipStudioStore {
     this.analysisResult = data;
     this.videoUrl = rawUrl;
     this.currentBatch = 1;
-    this.highlightedWords = [];
     this.selectedClipIdsForBulk = [];
 
     if (data.topClips.length > 0) {
@@ -171,21 +169,6 @@ class ClipStudioStore {
     this.activeClipRank = 0; // manual override
   }
 
-  toggleWordHighlight(word: string) {
-    const clean = word.toLowerCase().replace(/[^a-z0-9]/gi, '');
-    if (!clean) return;
-    if (this.highlightedWords.includes(clean)) {
-      this.highlightedWords = this.highlightedWords.filter((w: string) => w !== clean);
-    } else {
-      this.highlightedWords = [...this.highlightedWords, clean];
-    }
-  }
-
-  isWordHighlighted(word: string): boolean {
-    const clean = word.toLowerCase().replace(/[^a-z0-9]/gi, '');
-    return Boolean(clean && this.highlightedWords.includes(clean));
-  }
-
   reset() {
     this.analysisResult = null;
     this.videoUrl = '';
@@ -196,7 +179,6 @@ class ClipStudioStore {
     this.isUploading = false;
     this.uploadProgress = 0;
     this.uploadFilename = '';
-    this.highlightedWords = [];
     this.selectedClipIdsForBulk = [];
     this.bulkDownloadProgress = null;
   }

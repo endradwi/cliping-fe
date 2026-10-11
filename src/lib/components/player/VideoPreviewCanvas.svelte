@@ -219,12 +219,10 @@
         >
           {#each subtitleState.chunkWords as word, idx (idx)}
             {@const isActiveKaraoke = idx === subtitleState.activeInChunk}
-            {@const isUserKeyword = clipStore.isWordHighlighted(word)}
-            {@const isHighlighted = isActiveKaraoke || isUserKeyword}
             <span
-              class="inline-block mx-1.5 transition-all {isActiveKaraoke ? animationClass : ''} {isUserKeyword ? 'scale-105' : ''}"
+              class="inline-block mx-1.5 transition-all {isActiveKaraoke ? animationClass : ''}"
               style="
-                color: {isHighlighted ? clipStore.subtitleColor : '#FFFFFF'};
+                color: {isActiveKaraoke ? clipStore.subtitleColor : '#FFFFFF'};
                 transform-origin: center bottom;
               "
             >

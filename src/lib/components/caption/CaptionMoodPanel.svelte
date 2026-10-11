@@ -1,6 +1,6 @@
 <script lang="ts">
   import { clipStore, type SubtitleAnimation } from '../../stores/clip.svelte';
-  import { Sparkles, Crop, Type, Flame, Layers, Download, Check } from 'lucide-svelte';
+  import { Sparkles, Crop, Flame, Layers, Download, Check } from 'lucide-svelte';
 
   let {
     activeTranscriptText = '',
@@ -31,13 +31,6 @@
   const animationList: SubtitleAnimation[] = [
     'POP', 'FADE', 'RISE', 'DROP', 'ZOOM', 'TYPE', 'OFF'
   ];
-
-  // Extract unique clean words from speech dialogue
-  const uniqueWords = $derived.by(() => {
-    const text = activeTranscriptText || clipStore.analysisResult?.title || 'VIRAL HOOK FORMULA REVEALED';
-    const raw = text.split(/\s+/).map(w => w.replace(/[^a-zA-Z0-9]/g, '')).filter(w => w.length > 1);
-    return Array.from(new Set(raw)).slice(0, 30);
-  });
 </script>
 
 <div class="flex flex-col gap-4 p-4 sm:p-5 bg-[#200202]/80 border border-[#757D6F]/30 rounded-2xl backdrop-blur-md shadow-xl text-[#EEEAD7]">
@@ -221,29 +214,6 @@
           bind:value={clipStore.subtitlePosY}
           class="accent-[#D4FF00] h-1.5 bg-[#2D0000] rounded-lg cursor-pointer"
         />
-      </div>
-    </div>
-
-    <!-- Interactive Word Chips (Click to highlight keywords across video) -->
-    <div class="flex flex-col gap-1.5 p-3 bg-[#150000] border border-[#757D6F]/30 rounded-xl">
-      <div class="flex items-center justify-between text-[11px] font-mono text-[#A9B3A1]">
-        <span class="flex items-center gap-1">
-          <Type size={13} class="text-[#D4FF00]" />
-          <span>CLICK WORDS TO HIGHLIGHT (KEYWORDS)</span>
-        </span>
-        <span class="text-[10px] text-[#D4FF00] font-bold">{clipStore.highlightedWords.length} active</span>
-      </div>
-      <div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1">
-        {#each uniqueWords as word}
-          {@const isHighlighted = clipStore.isWordHighlighted(word)}
-          <button
-            type="button"
-            onclick={() => clipStore.toggleWordHighlight(word)}
-            class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all {isHighlighted ? 'bg-[#D4FF00] text-black shadow-lg scale-105 ring-1 ring-white' : 'bg-[#2D0000] text-[#A9B3A1] hover:text-[#EEEAD7] border border-[#757D6F]/30 hover:border-[#757D6F]/60'}"
-          >
-            {word}
-          </button>
-        {/each}
       </div>
     </div>
   {/if}
