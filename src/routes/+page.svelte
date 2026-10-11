@@ -41,7 +41,7 @@
           <div class="p-3 bg-[#0d1c42]/80 border border-[#22396f]/50 rounded-xl">
             <ShieldCheck size={15} class="text-[#fcf1d0] mb-1.5" />
             <h2 class="text-xs font-bold text-[#fcf1d0] mb-0.5">Export Cepat HD 1080p</h2>
-            <p class="text-[10px] text-[#8fa2cb]">Format 9:16 portrait, split podcast 50/50, atau ambient blur.</p>
+            <p class="text-[10px] text-[#8fa2cb]">Format 9:16 portrait, pan kamera fleksibel, atau ambient blur.</p>
           </div>
         </div>
       </div>
