@@ -126,11 +126,12 @@
 
   function handleTimeUpdate() {
     if (!videoElement) return;
+    isBuffering = false;
     const t = videoElement.currentTime;
     const start = clipStart ?? clipStore.selectedStart ?? 0;
     const end = clipEnd ?? clipStore.selectedEnd ?? 30;
 
-    if (t >= end) {
+    if (t >= end || t < start - 1.0) {
       videoElement.currentTime = start;
       if (secondaryVideoElement) secondaryVideoElement.currentTime = start;
       onTimeUpdate?.(start);
@@ -139,14 +140,15 @@
     }
   }
 
-  // Handle Seek from timeline or controls
+  // Handle Seek from timeline or controls or clip selection
   $effect(() => {
     if (videoElement && activeVideoSource) {
-      if (Math.abs(videoElement.currentTime - currentTime) > 0.4) {
+      if (Math.abs(videoElement.currentTime - currentTime) > 0.3) {
         videoElement.currentTime = currentTime;
         if (secondaryVideoElement) {
           secondaryVideoElement.currentTime = currentTime;
         }
+        isBuffering = false;
       }
     }
   });
@@ -158,6 +160,7 @@
         playVideo();
       } else if (!isPlaying && !videoElement.paused) {
         pauseVideo();
+        isBuffering = false;
       }
     }
   });
@@ -258,10 +261,13 @@
             muted={isMuted}
             ontimeupdate={handleTimeUpdate}
             onplay={() => isPlaying = true}
-            onpause={() => isPlaying = false}
-            onwaiting={() => isBuffering = true}
+            onpause={() => { isPlaying = false; isBuffering = false; }}
+            oncanplay={() => isBuffering = false}
+            onseeked={() => isBuffering = false}
+            onloadeddata={() => isBuffering = false}
+            onwaiting={() => { if (isPlaying) isBuffering = true; }}
             onplaying={() => isBuffering = false}
-            onerror={() => hasPlaybackError = 'Gagal memuat video stream'}
+            onerror={() => { hasPlaybackError = 'Gagal memuat video stream'; isBuffering = false; }}
           ></video>
         </div>
       {:else}
@@ -279,10 +285,13 @@
             muted={isMuted}
             ontimeupdate={handleTimeUpdate}
             onplay={() => isPlaying = true}
-            onpause={() => isPlaying = false}
-            onwaiting={() => isBuffering = true}
+            onpause={() => { isPlaying = false; isBuffering = false; }}
+            oncanplay={() => isBuffering = false}
+            onseeked={() => isBuffering = false}
+            onloadeddata={() => isBuffering = false}
+            onwaiting={() => { if (isPlaying) isBuffering = true; }}
             onplaying={() => isBuffering = false}
-            onerror={() => hasPlaybackError = 'Gagal memuat video stream'}
+            onerror={() => { hasPlaybackError = 'Gagal memuat video stream'; isBuffering = false; }}
           ></video>
         </div>
       {/if}
@@ -315,8 +324,8 @@
         {/if}
       </button>
 
-      <!-- Buffering Indicator -->
-      {#if isBuffering}
+      <!-- Buffering Indicator (Only during active playback stall) -->
+      {#if isBuffering && isPlaying}
         <div class="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
           <div class="p-3 rounded-xl bg-black/80 text-[#fcf1d0] flex items-center gap-2 border border-[#22396f]/40 shadow-xl">
             <Loader2 size={18} class="animate-spin text-[#fcf1d0]" />

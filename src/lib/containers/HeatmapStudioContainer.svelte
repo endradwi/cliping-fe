@@ -4,7 +4,7 @@
   import CaptionMoodPanel from '../components/caption/CaptionMoodPanel.svelte';
   import { triggerRenderClip, API_BASE } from '../services/api.client';
   import type { CandidateClip } from '../types';
-  import { Film, RotateCcw, RotateCw, Play, Pause, CheckCircle2 } from 'lucide-svelte';
+  import { Film, RotateCcw, RotateCw, Play, Pause, CheckCircle2, Check } from 'lucide-svelte';
   import JSZip from 'jszip';
 
   let currentTime = $state(0);
@@ -303,22 +303,72 @@
         {#each clipStore.analysisResult.topClips as clip}
           {@const isActive = clip.rank === clipStore.activeClipRank}
           {@const isChecked = clipStore.selectedClipIdsForBulk.includes(clip.id)}
+          {@const isBulkMode = clipStore.exportMode === 'bulk'}
           {@const isDownloaded = clipStore.isClipDownloaded(clip)}
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div class="h-full w-56 flex-shrink-0 p-2 rounded-xl border flex flex-col justify-between cursor-pointer transition-all {isActive ? 'bg-[#22396f] border-[#fcf1d0] text-[#fcf1d0] shadow-lg ring-1 ring-[#fcf1d0]/50' : 'bg-[#010736] border-[#22396f]/40 text-[#8fa2cb] hover:text-[#fcf1d0] hover:border-[#fcf1d0]/40'}" onclick={() => handleSelectClip(clip)}>
+          <div
+            class="h-full w-56 flex-shrink-0 p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all duration-150 {
+              isBulkMode
+                ? (isChecked
+                    ? 'bg-[#122659] border-2 border-[#fcf1d0] text-[#fcf1d0] shadow-[0_0_15px_rgba(252,241,208,0.25)] ring-1 ring-[#fcf1d0]/80'
+                    : 'bg-[#010736]/70 border border-[#22396f]/40 text-[#8fa2cb] opacity-60 hover:opacity-100 hover:border-[#8fa2cb]/70')
+                : (isActive
+                    ? 'bg-[#22396f] border-2 border-[#fcf1d0] text-[#fcf1d0] shadow-lg ring-1 ring-[#fcf1d0]/50'
+                    : 'bg-[#010736] border border-[#22396f]/40 text-[#8fa2cb] hover:text-[#fcf1d0] hover:border-[#fcf1d0]/40')
+            }"
+            onclick={() => handleSelectClip(clip)}
+          >
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-1.5">
-                {#if clipStore.exportMode === 'bulk'}
-                  <input type="checkbox" checked={isChecked} onclick={(e) => { e.stopPropagation(); clipStore.toggleBulkSelect(clip.id); }} class="w-3.5 h-3.5 rounded bg-[#0d1c42] accent-[#fcf1d0] cursor-pointer" />
-                {/if}
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold {isActive ? 'bg-[#fcf1d0] text-[#010736]' : 'bg-[#22396f] text-[#fcf1d0]'}">#{clip.rank}</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold {
+                  isBulkMode && isChecked
+                    ? 'bg-[#fcf1d0] text-[#010736]'
+                    : (isActive ? 'bg-[#fcf1d0] text-[#010736]' : 'bg-[#22396f] text-[#fcf1d0]')
+                }">
+                  #{clip.rank}
+                </span>
                 <span class="text-[10px] font-bold">{clip.score}%</span>
                 {#if clip.category}<span class="text-[8px] px-1 rounded bg-black/50 text-[#fcf1d0]">{clip.category}</span>{/if}
               </div>
-              {#if isDownloaded}<span class="text-[9px] flex items-center gap-0.5 font-bold text-[#fcf1d0]"><CheckCircle2 size={11} /><span>Ready</span></span>{/if}
+
+              <div class="flex items-center gap-1">
+                {#if isBulkMode}
+                  <button
+                    type="button"
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      clipStore.toggleBulkSelect(clip.id);
+                    }}
+                    class="px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all {
+                      isChecked
+                        ? 'bg-[#fcf1d0] text-[#010736] shadow-md ring-1 ring-black/20'
+                        : 'bg-[#0d1c42] text-[#8fa2cb] border border-[#22396f] hover:text-[#fcf1d0] hover:border-[#fcf1d0]/60'
+                    }"
+                  >
+                    {#if isChecked}
+                      <Check size={11} class="stroke-[3]" />
+                      <span>Dipilih</span>
+                    {:else}
+                      <span>+ Pilih</span>
+                    {/if}
+                  </button>
+                {/if}
+                {#if isDownloaded}
+                  <span class="text-[9px] flex items-center gap-0.5 font-bold text-[#fcf1d0] ml-0.5" title="Sudah pernah dirender">
+                    <CheckCircle2 size={11} />
+                    <span>Ready</span>
+                  </span>
+                {/if}
+              </div>
             </div>
-            <p class="text-[10px] leading-tight line-clamp-2 my-1 {isActive ? 'text-[#fcf1d0]' : 'text-[#8fa2cb]'}">"{clip.label || 'Spoken Hook'}"</p>
+
+            <p class="text-[10px] leading-tight line-clamp-2 my-1 {
+              (isBulkMode && isChecked) || isActive ? 'text-[#fcf1d0] font-medium' : 'text-[#8fa2cb]'
+            }">
+              "{clip.label || 'Spoken Hook'}"
+            </p>
+
             <div class="flex items-center justify-between text-[9px] text-[#8fa2cb]/80 pt-1 border-t border-[#22396f]/30">
               <span>{formatTime(clip.start)} - {formatTime(clip.end)}</span>
               <span class="font-bold text-[#c7d5f5]">{clip.duration.toFixed(1)}s</span>

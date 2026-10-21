@@ -833,8 +833,9 @@
         type="button"
         onclick={() => {
           clipStore.exportMode = 'bulk';
-          if (clipStore.selectedClipIdsForBulk.length === 0) {
-            clipStore.selectAllClips();
+          const activeClip = clipStore.analysisResult?.topClips.find(c => c.rank === clipStore.activeClipRank);
+          if (clipStore.selectedClipIdsForBulk.length === 0 && activeClip) {
+            clipStore.selectedClipIdsForBulk = [activeClip.id];
           }
         }}
         class="py-1 px-2 rounded-lg font-bold transition flex items-center justify-center gap-1.5 {clipStore.exportMode === 'bulk' ? 'bg-[#fcf1d0] text-[#010736] shadow-sm' : 'text-[#8fa2cb] hover:text-[#fcf1d0]'}"
