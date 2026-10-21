@@ -1,12 +1,12 @@
-import type { VideoAnalysisResult } from '../types';
+import type { VideoAnalysisResult, ClipRecommendation } from '../types';
 
 export const API_BASE = (import.meta.env.PUBLIC_API_URL || import.meta.env.VITE_API_URL || 'https://api-clip.endra.web.id').replace(/\/$/, '');
 
-export async function analyzeVideoUrl(url: string): Promise<VideoAnalysisResult> {
+export async function analyzeVideoUrl(url: string, brief?: string): Promise<VideoAnalysisResult> {
   const res = await fetch(`${API_BASE}/api/v1/analyze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url })
+    body: JSON.stringify({ url, brief: brief?.trim() || undefined })
   });
 
   const json = await res.json();
@@ -106,16 +106,37 @@ export function uploadFileDirectFallback(
 }
 
 // Analyze directly uploaded video from R2 URL
-export async function analyzeUploadedVideo(r2Url: string, title?: string, filename?: string): Promise<VideoAnalysisResult> {
+export async function analyzeUploadedVideo(r2Url: string, title?: string, filename?: string, brief?: string): Promise<VideoAnalysisResult> {
   const res = await fetch(`${API_BASE}/api/v1/analyze/upload`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ r2Url, title, filename })
+    body: JSON.stringify({ r2Url, title, filename, brief: brief?.trim() || undefined })
   });
 
   const json = await res.json();
   if (!res.ok || !json.success) {
     throw new Error(json.error?.message || 'Failed to analyze uploaded video');
+  }
+
+  return json.data;
+}
+
+// Fetch platform-specific upload recommendations & brief compliance
+export async function fetchClipRecommendation(payload: {
+  transcriptSnippet: string;
+  brief?: string;
+  videoTitle?: string;
+  clipRank?: number;
+}): Promise<ClipRecommendation> {
+  const res = await fetch(`${API_BASE}/api/v1/clips/recommendation`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.error?.message || 'Failed to fetch clip recommendation');
   }
 
   return json.data;

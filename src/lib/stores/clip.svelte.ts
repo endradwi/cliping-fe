@@ -1,5 +1,5 @@
-import type { VideoAnalysisResult, CandidateClip, RenderJobProgress } from '../types';
-import { fetchClipHistory } from '../services/api.client';
+import type { VideoAnalysisResult, CandidateClip, RenderJobProgress, ClipRecommendation } from '../types';
+import { fetchClipHistory, fetchClipRecommendation } from '../services/api.client';
 
 export type SubtitleAnimation = 'POP' | 'FADE' | 'RISE' | 'DROP' | 'ZOOM' | 'TYPE' | 'OFF';
 
@@ -8,6 +8,11 @@ class ClipStudioStore {
   videoUrl = $state<string>('');
   isAnalyzing = $state<boolean>(false);
   analysisResult = $state<VideoAnalysisResult | null>(null);
+
+  // Campaign Brief & AI Upload Recommendations
+  campaignBrief = $state<string>('');
+  clipRecommendations = $state<Record<string, ClipRecommendation>>({});
+  isLoadingRecommendation = $state<boolean>(false);
 
   // Upload state (Direct Browser-to-R2)
   isUploading = $state<boolean>(false);
@@ -98,8 +103,12 @@ class ClipStudioStore {
   async setAnalysis(data: VideoAnalysisResult, rawUrl: string) {
     this.analysisResult = data;
     this.videoUrl = rawUrl;
+    if (data.brief) {
+      this.campaignBrief = data.brief;
+    }
     this.currentBatch = 1;
     this.selectedClipIdsForBulk = [];
+    this.clipRecommendations = {};
 
     if (data.topClips.length > 0) {
       this.selectClip(data.topClips[0]);
@@ -203,9 +212,50 @@ class ClipStudioStore {
     this.subtitleSyncOffset = Number((this.subtitleSyncOffset + deltaSeconds).toFixed(2));
   }
 
+  getActiveClipRecommendationKey(): string {
+    return `clip_${this.activeClipRank}_${Math.round(this.selectedStart)}_${Math.round(this.selectedEnd)}`;
+  }
+
+  getRecommendationForActiveClip(): ClipRecommendation | null {
+    const key = this.getActiveClipRecommendationKey();
+    return this.clipRecommendations[key] || null;
+  }
+
+  async loadRecommendationForActiveClip(transcriptSnippet: string, force: boolean = false): Promise<ClipRecommendation | null> {
+    const key = this.getActiveClipRecommendationKey();
+    if (!force && this.clipRecommendations[key]) {
+      return this.clipRecommendations[key];
+    }
+
+    if (!transcriptSnippet) return null;
+
+    this.isLoadingRecommendation = true;
+    try {
+      const rec = await fetchClipRecommendation({
+        transcriptSnippet,
+        brief: this.campaignBrief || undefined,
+        videoTitle: this.analysisResult?.title || 'Clip',
+        clipRank: this.activeClipRank
+      });
+      this.clipRecommendations = {
+        ...this.clipRecommendations,
+        [key]: rec
+      };
+      return rec;
+    } catch (err) {
+      console.error('Failed to load upload recommendation:', err);
+      return null;
+    } finally {
+      this.isLoadingRecommendation = false;
+    }
+  }
+
   reset() {
     this.analysisResult = null;
     this.videoUrl = '';
+    this.campaignBrief = '';
+    this.clipRecommendations = {};
+    this.isLoadingRecommendation = false;
     this.currentBatch = 1;
     this.activeJobId = null;
     this.renderProgress = null;

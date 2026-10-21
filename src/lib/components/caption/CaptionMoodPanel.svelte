@@ -1,6 +1,6 @@
 <script lang="ts">
   import { clipStore, type SubtitleAnimation } from '../../stores/clip.svelte';
-  import { Sparkles, Crop, Film, Type, Download, PackageCheck, Loader2, ChevronDown, ChevronRight } from 'lucide-svelte';
+  import { Sparkles, Crop, Film, Type, Download, PackageCheck, Loader2, ChevronDown, ChevronRight, Copy, Check, Share2, RefreshCw } from 'lucide-svelte';
 
   let {
     activeTranscriptText = '',
@@ -11,12 +11,44 @@
   } = $props();
 
   let openSections = $state<Record<string, boolean>>({
-    framing: true,
+    framing: false,
     hook: false,
-    subtitle: true,
+    subtitle: false,
     words: false,
-    sync: false
+    sync: false,
+    recommendation: true
   });
+
+  let activePlatform = $state<'tiktok' | 'shorts' | 'reels'>('tiktok');
+  let copiedField = $state<string | null>(null);
+  let showEditBriefInline = $state(false);
+
+  function copyToClipboard(text: string, fieldId: string) {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    copiedField = fieldId;
+    setTimeout(() => {
+      if (copiedField === fieldId) copiedField = null;
+    }, 2000);
+  }
+
+  let currentRec = $derived(clipStore.getRecommendationForActiveClip());
+
+  async function generateOrRefreshRec() {
+    await clipStore.loadRecommendationForActiveClip(activeTranscriptText, true);
+  }
+
+  function getCombinedText(platform: 'tiktok' | 'shorts' | 'reels'): string {
+    if (!currentRec) return '';
+    if (platform === 'tiktok') {
+      return `${currentRec.tiktok.title}\n\n${currentRec.tiktok.caption}\n\n${currentRec.tiktok.hashtags.join(' ')}`;
+    }
+    if (platform === 'shorts') {
+      return `${currentRec.youtubeShorts.title}\n\n${currentRec.youtubeShorts.description || currentRec.youtubeShorts.caption}\n\n${currentRec.youtubeShorts.hashtags.join(' ')}`;
+    }
+    const cta = currentRec.instagramReels.callToAction ? `\n\n👉 ${currentRec.instagramReels.callToAction}` : '';
+    return `${currentRec.instagramReels.hook || currentRec.instagramReels.title}\n\n${currentRec.instagramReels.caption}${cta}\n\n${currentRec.instagramReels.hashtags.join(' ')}`;
+  }
 
   function toggleSection(sec: string) {
     openSections[sec] = !openSections[sec];
@@ -499,6 +531,286 @@
                 +0.1s
               </button>
             </div>
+          </div>
+        </div>
+      {/if}
+    </div>
+
+    <!-- ACCORDION 6: REKOMENDASI UPLOAD & BRIEF (SIAP POSTING) -->
+    <div class="bg-[#0d1c42]/90 border border-[#22396f]/40 rounded-xl overflow-hidden shadow-md">
+      <button
+        type="button"
+        onclick={() => toggleSection('recommendation')}
+        class="w-full p-2.5 flex items-center justify-between text-left hover:bg-[#22396f]/20 transition"
+      >
+        <div class="flex items-center gap-2">
+          {#if openSections.recommendation}
+            <ChevronDown size={14} class="text-[#fcf1d0]" />
+          {:else}
+            <ChevronRight size={14} class="text-[#8fa2cb]" />
+          {/if}
+          <Share2 size={13} class="text-[#fcf1d0]" />
+          <span class="text-xs font-bold uppercase">6. Rekomendasi Upload & Brief</span>
+        </div>
+        <span class="text-[10px] px-2 py-0.5 rounded bg-[#010736] border border-[#22396f] text-[#fcf1d0] font-bold">
+          {clipStore.campaignBrief.trim() ? '✅ BRIEF' : '⚡ METADATA'}
+        </span>
+      </button>
+
+      {#if openSections.recommendation}
+        <div class="p-3 border-t border-[#22396f]/30 flex flex-col gap-2.5 bg-[#010736]/30">
+          <!-- Platform Tabs -->
+          <div class="grid grid-cols-3 gap-1 p-0.5 bg-[#010736] rounded-lg border border-[#22396f]/30 text-[10px]">
+            <button
+              type="button"
+              onclick={() => activePlatform = 'tiktok'}
+              class="py-1 px-1.5 rounded transition text-center font-bold {activePlatform === 'tiktok' ? 'bg-[#22396f] text-[#fcf1d0]' : 'text-[#8fa2cb] hover:text-[#fcf1d0]'}"
+            >
+              📱 TikTok
+            </button>
+            <button
+              type="button"
+              onclick={() => activePlatform = 'shorts'}
+              class="py-1 px-1.5 rounded transition text-center font-bold {activePlatform === 'shorts' ? 'bg-[#22396f] text-[#fcf1d0]' : 'text-[#8fa2cb] hover:text-[#fcf1d0]'}"
+            >
+              🔴 Shorts
+            </button>
+            <button
+              type="button"
+              onclick={() => activePlatform = 'reels'}
+              class="py-1 px-1.5 rounded transition text-center font-bold {activePlatform === 'reels' ? 'bg-[#22396f] text-[#fcf1d0]' : 'text-[#8fa2cb] hover:text-[#fcf1d0]'}"
+            >
+              📸 Reels
+            </button>
+          </div>
+
+          {#if !currentRec}
+            <!-- Trigger button if not generated yet -->
+            <div class="p-3 bg-[#010736] rounded-xl border border-[#22396f]/40 flex flex-col items-center text-center gap-2">
+              <span class="text-xs text-[#8fa2cb] leading-relaxed">
+                {clipStore.campaignBrief.trim() ? 'AI akan memverifikasi klip ini dengan brief campaign Anda dan membuat metadata siap upload.' : 'AI akan mengekstrak transkrip klip dan membuat judul, caption, & hashtag terbaik.'}
+              </span>
+              <button
+                type="button"
+                disabled={clipStore.isLoadingRecommendation}
+                onclick={generateOrRefreshRec}
+                class="px-4 py-2 bg-[#fcf1d0] hover:bg-[#ebdca6] text-[#010736] font-bold text-xs rounded-lg shadow transition flex items-center gap-2 disabled:opacity-50"
+              >
+                {#if clipStore.isLoadingRecommendation}
+                  <Loader2 size={13} class="animate-spin text-[#010736]" />
+                  <span>Menganalisis & Membuat Rekomendasi...</span>
+                {:else}
+                  <Sparkles size={13} class="text-[#010736]" />
+                  <span>✨ Buat Rekomendasi Upload</span>
+                {/if}
+              </button>
+            </div>
+          {:else}
+            <!-- Brief Compliance Alert / Badge (If brief is active) -->
+            {#if currentRec.briefCompliance}
+              <div class="p-2 rounded-lg bg-[#010736] border border-[#22396f]/40 flex items-start gap-2 text-[10px]">
+                <span class="px-1.5 py-0.5 rounded font-bold {currentRec.briefCompliance.matched ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'} flex-shrink-0">
+                  {currentRec.briefCompliance.matched ? '✓ Sesuai Brief' : '⚠ Perhatian'}
+                </span>
+                <span class="text-[#c7d5f5] leading-snug">{currentRec.briefCompliance.reason}</span>
+              </div>
+            {/if}
+
+            <!-- Tab Content -->
+            {#if activePlatform === 'tiktok'}
+              <!-- TIKTOK -->
+              <div class="flex flex-col gap-2 text-[10px]">
+                <!-- Hook Title -->
+                <div class="flex flex-col gap-1 p-2 bg-[#010736] rounded-lg border border-[#22396f]/30">
+                  <div class="flex items-center justify-between text-[#8fa2cb]">
+                    <span>HOOK JUDUL TIKTOK</span>
+                    <button type="button" onclick={() => copyToClipboard(currentRec?.tiktok.title || '', 'tt_title')} class="hover:text-[#fcf1d0] flex items-center gap-1 font-bold">
+                      {#if copiedField === 'tt_title'}<Check size={11} class="text-emerald-400" /><span>Tersalin</span>{:else}<Copy size={11} /><span>Salin</span>{/if}
+                    </button>
+                  </div>
+                  <div class="text-[#fcf1d0] font-bold">{currentRec.tiktok.title}</div>
+                </div>
+
+                <!-- Caption -->
+                <div class="flex flex-col gap-1 p-2 bg-[#010736] rounded-lg border border-[#22396f]/30">
+                  <div class="flex items-center justify-between text-[#8fa2cb]">
+                    <span>CAPTION TIKTOK</span>
+                    <button type="button" onclick={() => copyToClipboard(currentRec?.tiktok.caption || '', 'tt_cap')} class="hover:text-[#fcf1d0] flex items-center gap-1 font-bold">
+                      {#if copiedField === 'tt_cap'}<Check size={11} class="text-emerald-400" /><span>Tersalin</span>{:else}<Copy size={11} /><span>Salin</span>{/if}
+                    </button>
+                  </div>
+                  <div class="text-[#fcf1d0] leading-relaxed">{currentRec.tiktok.caption}</div>
+                </div>
+
+                <!-- Hashtags -->
+                <div class="flex flex-col gap-1 p-2 bg-[#010736] rounded-lg border border-[#22396f]/30">
+                  <div class="flex items-center justify-between text-[#8fa2cb]">
+                    <span>HASHTAGS</span>
+                    <button type="button" onclick={() => copyToClipboard(currentRec?.tiktok.hashtags.join(' ') || '', 'tt_hash')} class="hover:text-[#fcf1d0] flex items-center gap-1 font-bold">
+                      {#if copiedField === 'tt_hash'}<Check size={11} class="text-emerald-400" /><span>Tersalin</span>{:else}<Copy size={11} /><span>Salin Semua</span>{/if}
+                    </button>
+                  </div>
+                  <div class="flex flex-wrap gap-1">
+                    {#each currentRec.tiktok.hashtags as tag}
+                      <span class="px-1.5 py-0.5 rounded bg-[#0d1c42] border border-[#22396f]/40 text-[#fcf1d0]">{tag}</span>
+                    {/each}
+                  </div>
+                </div>
+
+                {#if currentRec.tiktok.tips}
+                  <div class="p-2 bg-[#0d1c42] rounded-lg border border-[#22396f]/30 text-[#8fa2cb] flex items-start gap-1.5">
+                    <span>💡</span>
+                    <span class="leading-snug">{currentRec.tiktok.tips}</span>
+                  </div>
+                {/if}
+              </div>
+            {:else if activePlatform === 'shorts'}
+              <!-- YOUTUBE SHORTS -->
+              <div class="flex flex-col gap-2 text-[10px]">
+                <!-- Title <50 Chars -->
+                <div class="flex flex-col gap-1 p-2 bg-[#010736] rounded-lg border border-[#22396f]/30">
+                  <div class="flex items-center justify-between text-[#8fa2cb]">
+                    <div class="flex items-center gap-1.5">
+                      <span>JUDUL SHORTS</span>
+                      <span class="px-1.5 py-0.2 rounded text-[9px] {currentRec.youtubeShorts.title.length <= 50 ? 'bg-emerald-950 text-emerald-300' : 'bg-red-950 text-red-300'} font-bold">
+                        {currentRec.youtubeShorts.title.length}/50 char
+                      </span>
+                    </div>
+                    <button type="button" onclick={() => copyToClipboard(currentRec?.youtubeShorts.title || '', 'yt_title')} class="hover:text-[#fcf1d0] flex items-center gap-1 font-bold">
+                      {#if copiedField === 'yt_title'}<Check size={11} class="text-emerald-400" /><span>Tersalin</span>{:else}<Copy size={11} /><span>Salin</span>{/if}
+                    </button>
+                  </div>
+                  <div class="text-[#fcf1d0] font-bold">{currentRec.youtubeShorts.title}</div>
+                </div>
+
+                <!-- Description -->
+                <div class="flex flex-col gap-1 p-2 bg-[#010736] rounded-lg border border-[#22396f]/30">
+                  <div class="flex items-center justify-between text-[#8fa2cb]">
+                    <span>DESKRIPSI SHORTS</span>
+                    <button type="button" onclick={() => copyToClipboard(currentRec?.youtubeShorts.description || currentRec?.youtubeShorts.caption || '', 'yt_desc')} class="hover:text-[#fcf1d0] flex items-center gap-1 font-bold">
+                      {#if copiedField === 'yt_desc'}<Check size={11} class="text-emerald-400" /><span>Tersalin</span>{:else}<Copy size={11} /><span>Salin</span>{/if}
+                    </button>
+                  </div>
+                  <div class="text-[#fcf1d0] leading-relaxed">{currentRec.youtubeShorts.description || currentRec.youtubeShorts.caption}</div>
+                </div>
+
+                <!-- Hashtags -->
+                <div class="flex flex-col gap-1 p-2 bg-[#010736] rounded-lg border border-[#22396f]/30">
+                  <div class="flex items-center justify-between text-[#8fa2cb]">
+                    <span>HASHTAGS</span>
+                    <button type="button" onclick={() => copyToClipboard(currentRec?.youtubeShorts.hashtags.join(' ') || '', 'yt_hash')} class="hover:text-[#fcf1d0] flex items-center gap-1 font-bold">
+                      {#if copiedField === 'yt_hash'}<Check size={11} class="text-emerald-400" /><span>Tersalin</span>{:else}<Copy size={11} /><span>Salin Semua</span>{/if}
+                    </button>
+                  </div>
+                  <div class="flex flex-wrap gap-1">
+                    {#each currentRec.youtubeShorts.hashtags as tag}
+                      <span class="px-1.5 py-0.5 rounded bg-[#0d1c42] border border-[#22396f]/40 text-[#fcf1d0]">{tag}</span>
+                    {/each}
+                  </div>
+                </div>
+              </div>
+            {:else}
+              <!-- INSTAGRAM REELS -->
+              <div class="flex flex-col gap-2 text-[10px]">
+                <!-- Hook -->
+                <div class="flex flex-col gap-1 p-2 bg-[#010736] rounded-lg border border-[#22396f]/30">
+                  <div class="flex items-center justify-between text-[#8fa2cb]">
+                    <span>HOOK BARIS PERTAMA</span>
+                    <button type="button" onclick={() => copyToClipboard(currentRec?.instagramReels.hook || currentRec?.instagramReels.title || '', 'ig_hook')} class="hover:text-[#fcf1d0] flex items-center gap-1 font-bold">
+                      {#if copiedField === 'ig_hook'}<Check size={11} class="text-emerald-400" /><span>Tersalin</span>{:else}<Copy size={11} /><span>Salin</span>{/if}
+                    </button>
+                  </div>
+                  <div class="text-[#fcf1d0] font-bold">{currentRec.instagramReels.hook || currentRec.instagramReels.title}</div>
+                </div>
+
+                <!-- Caption -->
+                <div class="flex flex-col gap-1 p-2 bg-[#010736] rounded-lg border border-[#22396f]/30">
+                  <div class="flex items-center justify-between text-[#8fa2cb]">
+                    <span>CAPTION REELS</span>
+                    <button type="button" onclick={() => copyToClipboard(currentRec?.instagramReels.caption || '', 'ig_cap')} class="hover:text-[#fcf1d0] flex items-center gap-1 font-bold">
+                      {#if copiedField === 'ig_cap'}<Check size={11} class="text-emerald-400" /><span>Tersalin</span>{:else}<Copy size={11} /><span>Salin</span>{/if}
+                    </button>
+                  </div>
+                  <div class="text-[#fcf1d0] leading-relaxed whitespace-pre-line">{currentRec.instagramReels.caption}</div>
+                  {#if currentRec.instagramReels.callToAction}
+                    <div class="text-[#fcf1d0] font-bold pt-1 border-t border-[#22396f]/20">👉 {currentRec.instagramReels.callToAction}</div>
+                  {/if}
+                </div>
+
+                <!-- Hashtags -->
+                <div class="flex flex-col gap-1 p-2 bg-[#010736] rounded-lg border border-[#22396f]/30">
+                  <div class="flex items-center justify-between text-[#8fa2cb]">
+                    <span>HASHTAGS</span>
+                    <button type="button" onclick={() => copyToClipboard(currentRec?.instagramReels.hashtags.join(' ') || '', 'ig_hash')} class="hover:text-[#fcf1d0] flex items-center gap-1 font-bold">
+                      {#if copiedField === 'ig_hash'}<Check size={11} class="text-emerald-400" /><span>Tersalin</span>{:else}<Copy size={11} /><span>Salin Semua</span>{/if}
+                    </button>
+                  </div>
+                  <div class="flex flex-wrap gap-1">
+                    {#each currentRec.instagramReels.hashtags as tag}
+                      <span class="px-1.5 py-0.5 rounded bg-[#0d1c42] border border-[#22396f]/40 text-[#fcf1d0]">{tag}</span>
+                    {/each}
+                  </div>
+                </div>
+              </div>
+            {/if}
+
+            <!-- Combined 1-Click Copy & Refresh Bar -->
+            <div class="flex items-center gap-1.5 pt-1 border-t border-[#22396f]/30">
+              <button
+                type="button"
+                onclick={() => copyToClipboard(getCombinedText(activePlatform), `all_${activePlatform}`)}
+                class="flex-1 py-1.5 px-2 rounded-lg bg-[#22396f] hover:bg-[#2b488c] text-[#fcf1d0] font-bold text-xs flex items-center justify-center gap-1.5 transition shadow"
+              >
+                {#if copiedField === `all_${activePlatform}`}
+                  <Check size={13} class="text-emerald-300" />
+                  <span>Semua Tersalin!</span>
+                {:else}
+                  <Copy size={13} />
+                  <span>Salin Format Lengkap {activePlatform.toUpperCase()}</span>
+                {/if}
+              </button>
+              <button
+                type="button"
+                disabled={clipStore.isLoadingRecommendation}
+                onclick={generateOrRefreshRec}
+                class="p-1.5 rounded-lg bg-[#010736] hover:bg-[#0d1c42] border border-[#22396f]/50 text-[#8fa2cb] hover:text-[#fcf1d0] transition"
+                title="Perbarui rekomendasi"
+              >
+                <RefreshCw size={14} class={clipStore.isLoadingRecommendation ? 'animate-spin' : ''} />
+              </button>
+            </div>
+          {/if}
+
+          <!-- Optional Inline Brief Tweaker -->
+          <div class="pt-2 border-t border-[#22396f]/20 flex flex-col gap-1.5">
+            <button
+              type="button"
+              onclick={() => showEditBriefInline = !showEditBriefInline}
+              class="text-[10px] text-[#8fa2cb] hover:text-[#fcf1d0] flex items-center justify-between font-mono"
+            >
+              <span>{showEditBriefInline ? '▼ Tutup Arahan Brief' : '▶ Edit Arahan / Brief Campaign'}</span>
+              <span>{clipStore.campaignBrief.trim() ? '(Aktif)' : '(Kosong)'}</span>
+            </button>
+            {#if showEditBriefInline}
+              <div class="flex flex-col gap-1 p-2 bg-[#010736] rounded-lg border border-[#22396f]/30">
+                <textarea
+                  bind:value={clipStore.campaignBrief}
+                  rows={2}
+                  placeholder="Aturan campaign, hashtag wajib, atau topik yang dilarang..."
+                  class="w-full bg-transparent text-[10px] text-[#fcf1d0] placeholder:text-[#8fa2cb]/30 focus:outline-none resize-none"
+                ></textarea>
+                <div class="flex justify-end gap-1">
+                  <button
+                    type="button"
+                    disabled={clipStore.isLoadingRecommendation}
+                    onclick={generateOrRefreshRec}
+                    class="px-2 py-0.5 rounded bg-[#fcf1d0] text-[#010736] font-bold text-[9px] hover:bg-[#ebdca6] transition"
+                  >
+                    Terapkan & Regenerate
+                  </button>
+                </div>
+              </div>
+            {/if}
           </div>
         </div>
       {/if}

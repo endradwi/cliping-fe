@@ -11,13 +11,14 @@
   let isDragging = $state(false);
   let isWindowDragging = $state(false);
   let fileInputRef = $state<HTMLInputElement | null>(null);
+  let showBriefInput = $state(false);
 
   async function handleAnalyze(url: string) {
     errorMsg = null;
     isYoutubeBlocked = false;
     clipStore.isAnalyzing = true;
     try {
-      const data = await analyzeVideoUrl(url);
+      const data = await analyzeVideoUrl(url, clipStore.campaignBrief);
       await clipStore.setAnalysis(data, url);
     } catch (err: any) {
       const msg = err.message || 'Gagal memproses video. Silakan coba unggah file video langsung.';
@@ -40,6 +41,12 @@
     if (!file) return;
     if (!file.type.startsWith('video/') && !file.name.match(/\.(mp4|mov|webm|mkv|m4v)$/i)) {
       errorMsg = 'Please select a valid video file (.mp4, .mov, .webm, .mkv)';
+      return;
+    }
+
+    // ponytail: 2GB ceiling prevents choking VPS ffmpeg workers. Upgrade to S3 multipart when adding studio raw tier.
+    if (file.size > 2 * 1024 * 1024 * 1024) {
+      errorMsg = 'File terlalu besar (maksimal 2 GB). Kompres atau potong durasi video terlebih dahulu.';
       return;
     }
 
@@ -77,7 +84,7 @@
       clipStore.isUploading = false;
       clipStore.isAnalyzing = true;
       const cleanTitle = file.name.replace(/\.[^/.]+$/, '');
-      const data = await analyzeUploadedVideo(publicUrl, cleanTitle, file.name);
+      const data = await analyzeUploadedVideo(publicUrl, cleanTitle, file.name, clipStore.campaignBrief);
 
       await clipStore.setAnalysis(data, publicUrl);
     } catch (err: any) {
@@ -221,6 +228,44 @@
       {/if}
     </div>
   {/if}
+
+  <!-- Progressive Disclosure: Campaign Brief & Do's/Don'ts (Optional) -->
+  <div class="w-full mt-3 font-mono">
+    <button
+      type="button"
+      onclick={() => showBriefInput = !showBriefInput}
+      class="w-full py-2 px-3 rounded-xl bg-[#0d1c42]/60 hover:bg-[#0d1c42] border border-[#22396f]/40 hover:border-[#22396f] text-left transition flex items-center justify-between text-xs text-[#8fa2cb] hover:text-[#fcf1d0] group"
+    >
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-[#fcf1d0]">{showBriefInput ? '▼' : '▶'}</span>
+        <span class="font-bold text-[#fcf1d0]">Arahan Campaign / Brief Khusus</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded bg-[#010736] border border-[#22396f]/50 text-[#8fa2cb]">Opsional</span>
+      </div>
+      <span class="text-[11px] text-[#8fa2cb] group-hover:text-[#fcf1d0]">
+        {clipStore.campaignBrief.trim() ? '✓ Ada Arahan' : '+ Tambah Aturan Campaign'}
+      </span>
+    </button>
+
+    {#if showBriefInput}
+      <div class="mt-2 p-3 bg-[#0d1c42] border border-[#22396f]/50 rounded-xl flex flex-col gap-2 shadow-inner">
+        <div class="flex items-center justify-between text-[11px] text-[#8fa2cb]">
+          <span>Tulis syarat campaign, kata kunci wajib, hashtag, atau larangan konten:</span>
+          {#if clipStore.campaignBrief.trim()}
+            <button type="button" onclick={() => clipStore.campaignBrief = ''} class="text-[#fcf1d0] hover:underline text-[10px]">Bersihkan</button>
+          {/if}
+        </div>
+        <textarea
+          bind:value={clipStore.campaignBrief}
+          rows={3}
+          placeholder="Contoh: Fokus ke tips bisnis & affiliate, dilarang bahas politik/kontroversi, wajib mention #BountyBrand & CTA ke link bio."
+          class="w-full bg-[#010736] border border-[#22396f]/60 rounded-lg p-2.5 text-xs text-[#fcf1d0] placeholder:text-[#8fa2cb]/40 focus:outline-none focus:border-[#fcf1d0] resize-none"
+        ></textarea>
+        <span class="text-[10px] text-[#8fa2cb]/70">
+          💡 AI akan memfilter klip dan membuat rekomendasi judul, caption, & hashtag sesuai arahan ini.
+        </span>
+      </div>
+    {/if}
+  </div>
 
   <!-- PROACTIVE SMART RESCUE CARD (When YouTube link gets bot blocked or errors) -->
   {#if isYoutubeBlocked}

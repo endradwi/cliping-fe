@@ -2,10 +2,20 @@
   import { clipStore } from '../stores/clip.svelte';
   import { subscribeToProgress } from '../services/sse.client';
   import { API_BASE } from '../services/api.client';
-  import { Download, CheckCircle2, AlertCircle, Loader2, ExternalLink } from 'lucide-svelte';
+  import { Download, CheckCircle2, AlertCircle, Loader2, ExternalLink, Copy, Check, Sparkles } from 'lucide-svelte';
   import Button from '../components/ui/Button.svelte';
 
   let unsubscribe: (() => void) | null = null;
+  let copiedMeta = $state(false);
+
+  function copyCompletedMeta() {
+    const rec = clipStore.getRecommendationForActiveClip();
+    if (!rec) return;
+    const text = `${rec.tiktok.title}\n\n${rec.tiktok.caption}\n\n${rec.tiktok.hashtags.join(' ')}`;
+    navigator.clipboard.writeText(text);
+    copiedMeta = true;
+    setTimeout(() => copiedMeta = false, 2500);
+  }
 
   $effect(() => {
     if (clipStore.activeJobId && clipStore.isRendering) {
@@ -59,6 +69,22 @@
             <Download size={16} />
             <span>Download MP4</span>
           </a>
+
+          {#if clipStore.getRecommendationForActiveClip()}
+            <button
+              type="button"
+              onclick={copyCompletedMeta}
+              class="w-full py-2 px-3 rounded-xl bg-[#010736] hover:bg-[#0d1c42] border border-[#22396f]/50 text-[#fcf1d0] text-xs font-mono flex items-center justify-center gap-1.5 transition"
+            >
+              {#if copiedMeta}
+                <Check size={14} class="text-emerald-400" />
+                <span class="text-emerald-300 font-bold">Caption & Hashtags Tersalin!</span>
+              {:else}
+                <Copy size={14} class="text-[#fcf1d0]" />
+                <span>Salin Caption & Hashtags TikTok</span>
+              {/if}
+            </button>
+          {/if}
 
           <!-- Secondary options -->
           <div class="flex items-center gap-2 w-full">

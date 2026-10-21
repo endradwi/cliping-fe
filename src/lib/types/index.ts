@@ -4,6 +4,26 @@ export interface HeatmapPoint {
   value: number;
 }
 
+export interface PlatformMetadata {
+  title: string;
+  caption: string;
+  hashtags: string[];
+  description?: string;
+  hook?: string;
+  tips?: string;
+  callToAction?: string;
+}
+
+export interface ClipRecommendation {
+  tiktok: PlatformMetadata;
+  youtubeShorts: PlatformMetadata;
+  instagramReels: PlatformMetadata;
+  briefCompliance?: {
+    matched: boolean;
+    reason: string;
+  };
+}
+
 export interface CandidateClip {
   id: string;
   rank: number;
@@ -15,6 +35,7 @@ export interface CandidateClip {
   category?: 'EDU' | 'CTRL' | 'INSP';
   isDownloaded?: boolean;
   downloadUrl?: string;
+  recommendation?: ClipRecommendation;
 }
 
 export interface TranscriptLine {
@@ -34,6 +55,7 @@ export interface VideoAnalysisResult {
   transcript?: TranscriptLine[];
   isUploadedVideo?: boolean;
   directVideoUrl?: string;
+  brief?: string;
 }
 
 export interface RenderJobProgress {
