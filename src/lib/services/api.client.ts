@@ -2,6 +2,19 @@ import type { VideoAnalysisResult, ClipRecommendation } from '../types';
 
 export const API_BASE = (import.meta.env.PUBLIC_API_URL || import.meta.env.VITE_API_URL || 'https://api-clip.endra.web.id').replace(/\/$/, '');
 
+// Resolves video URL ensuring ISP blocking & CORS bypass on *.r2.dev
+export function resolveMediaUrl(url: string | undefined | null): string {
+  if (!url) return '';
+  if (url.startsWith('blob:')) return url;
+  if (url.includes('.r2.dev') || url.includes('.r2.cloudflarestorage.com')) {
+    return `${API_BASE}/api/v1/media/stream?url=${encodeURIComponent(url)}`;
+  }
+  if (url.startsWith('/api/v1/media/stream')) {
+    return `${API_BASE}${url}`;
+  }
+  return url;
+}
+
 export async function analyzeVideoUrl(url: string, brief?: string): Promise<VideoAnalysisResult> {
   const res = await fetch(`${API_BASE}/api/v1/analyze`, {
     method: 'POST',

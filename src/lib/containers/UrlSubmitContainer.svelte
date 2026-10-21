@@ -56,6 +56,11 @@
     clipStore.uploadProgress = 0;
     clipStore.uploadFilename = file.name;
 
+    // Cache local blob for instantaneous 0ms video preview playback
+    try {
+      clipStore.localVideoBlobUrl = URL.createObjectURL(file);
+    } catch {}
+
     try {
       let publicUrl = '';
 

@@ -1,10 +1,12 @@
 <script lang="ts">
   import { clipStore } from '../../stores/clip.svelte';
+  import { resolveMediaUrl } from '../../services/api.client';
+  import { Play, Pause, Volume2, VolumeX, Loader2, AlertCircle } from 'lucide-svelte';
 
   let {
     videoId = '',
     currentTime = 0,
-    isPlaying = false,
+    isPlaying = $bindable(false),
     burnSubtitles = true,
     aspectRatio = '9:16',
     clipStart = 0,
@@ -23,6 +25,18 @@
 
   let videoElement = $state<HTMLVideoElement | null>(null);
   let secondaryVideoElement = $state<HTMLVideoElement | null>(null);
+  let isMuted = $state(false);
+  let hasPlaybackError = $state<string | null>(null);
+  let isBuffering = $state(false);
+
+  // Auto-resolve video source: uses 0ms local blob first, then fallbacks to stream proxy
+  const activeVideoSource = $derived.by(() => {
+    if (clipStore.localVideoBlobUrl) return clipStore.localVideoBlobUrl;
+    if (clipStore.analysisResult?.directVideoUrl) {
+      return resolveMediaUrl(clipStore.analysisResult.directVideoUrl);
+    }
+    return '';
+  });
 
   // Responsive frame dimensions filling the monitor area smoothly (CapCut Studio Style)
   const frameClass = $derived.by(() => {
@@ -54,75 +68,98 @@
     }
   });
 
+  function playVideo() {
+    if (!videoElement) return;
+    hasPlaybackError = null;
+    const p = videoElement.play();
+    if (p !== undefined) {
+      p.catch((err) => {
+        console.warn('Playback with audio blocked by browser autoplay policy, attempting muted fallback:', err);
+        isMuted = true;
+        if (videoElement) {
+          videoElement.muted = true;
+          videoElement.play().catch((mutedErr) => {
+            console.error('Muted playback also blocked:', mutedErr);
+            hasPlaybackError = 'Klik video untuk memutar';
+          });
+        }
+      });
+    }
+    if (secondaryVideoElement && secondaryVideoElement.paused) {
+      secondaryVideoElement.play().catch(() => {});
+    }
+  }
+
+  function pauseVideo() {
+    if (videoElement && !videoElement.paused) {
+      videoElement.pause();
+    }
+    if (secondaryVideoElement && !secondaryVideoElement.paused) {
+      secondaryVideoElement.pause();
+    }
+  }
+
+  function togglePlay(e?: MouseEvent) {
+    if (e) e.stopPropagation();
+    if (activeVideoSource) {
+      if (!videoElement) return;
+      if (videoElement.paused) {
+        videoElement.muted = isMuted;
+        playVideo();
+        isPlaying = true;
+      } else {
+        pauseVideo();
+        isPlaying = false;
+      }
+    } else {
+      isPlaying = !isPlaying;
+    }
+  }
+
+  function toggleMute(e?: MouseEvent) {
+    if (e) e.stopPropagation();
+    isMuted = !isMuted;
+    if (videoElement) {
+      videoElement.muted = isMuted;
+    }
+  }
+
+  function handleTimeUpdate() {
+    if (!videoElement) return;
+    const t = videoElement.currentTime;
+    const start = clipStart ?? clipStore.selectedStart ?? 0;
+    const end = clipEnd ?? clipStore.selectedEnd ?? 30;
+
+    if (t >= end) {
+      videoElement.currentTime = start;
+      if (secondaryVideoElement) secondaryVideoElement.currentTime = start;
+      onTimeUpdate?.(start);
+    } else {
+      onTimeUpdate?.(t);
+    }
+  }
+
   // Handle Seek from timeline or controls
   $effect(() => {
-    if (videoElement && clipStore.analysisResult?.directVideoUrl) {
-      if (Math.abs(videoElement.currentTime - currentTime) > 0.8) {
+    if (videoElement && activeVideoSource) {
+      if (Math.abs(videoElement.currentTime - currentTime) > 0.4) {
         videoElement.currentTime = currentTime;
-      }
-    }
-    if (secondaryVideoElement && clipStore.analysisResult?.directVideoUrl) {
-      if (Math.abs(secondaryVideoElement.currentTime - currentTime) > 0.8) {
-        secondaryVideoElement.currentTime = currentTime;
+        if (secondaryVideoElement) {
+          secondaryVideoElement.currentTime = currentTime;
+        }
       }
     }
   });
 
-  // Real-time Playback Loop & Time Tracking
+  // Handle outside play/pause state changes (Spacebar or dock buttons)
   $effect(() => {
-    let animId: number | null = null;
-    let timer: any = null;
-
-    if (isPlaying) {
-      if (videoElement && clipStore.analysisResult?.directVideoUrl) {
-        if (videoElement.paused) {
-          videoElement.play().catch(() => {});
-        }
-        if (secondaryVideoElement && secondaryVideoElement.paused) {
-          secondaryVideoElement.play().catch(() => {});
-        }
-
-        const tick = () => {
-          if (!videoElement) return;
-          const t = videoElement.currentTime;
-          const endBoundary = clipEnd || clipStore.selectedEnd || 30;
-          const startBoundary = clipStart || clipStore.selectedStart || 0;
-
-          if (t >= endBoundary) {
-            videoElement.currentTime = startBoundary;
-            if (secondaryVideoElement) secondaryVideoElement.currentTime = startBoundary;
-            onTimeUpdate?.(startBoundary);
-          } else {
-            onTimeUpdate?.(t);
-          }
-          animId = requestAnimationFrame(tick);
-        };
-        animId = requestAnimationFrame(tick);
-      } else {
-        // Fallback ticker for YouTube embed preview
-        timer = setInterval(() => {
-          const endBoundary = clipEnd || clipStore.selectedEnd || 30;
-          const startBoundary = clipStart || clipStore.selectedStart || 0;
-          let nextTime = currentTime + 0.1;
-          if (nextTime >= endBoundary) {
-            nextTime = startBoundary;
-          }
-          onTimeUpdate?.(nextTime);
-        }, 100);
-      }
-    } else {
-      if (videoElement && !videoElement.paused) {
-        videoElement.pause();
-      }
-      if (secondaryVideoElement && !secondaryVideoElement.paused) {
-        secondaryVideoElement.pause();
+    if (activeVideoSource && videoElement) {
+      if (isPlaying && videoElement.paused) {
+        playVideo();
+      } else if (!isPlaying && !videoElement.paused) {
+        pauseVideo();
       }
     }
-
-    return () => {
-      if (animId) cancelAnimationFrame(animId);
-      if (timer) clearInterval(timer);
-    };
   });
 
   // Find currently spoken transcript line synchronized to exact video timestamp
@@ -199,42 +236,117 @@
       </div>
     {/if}
 
-    {#if clipStore.analysisResult?.directVideoUrl}
+    {#if activeVideoSource}
       {#if clipStore.layoutMode === 'fit-blur'}
         <!-- Ambient Blurred Background + Sharp Centered Video -->
-        <div class="w-full h-full relative overflow-hidden flex items-center justify-center bg-black">
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="w-full h-full relative overflow-hidden flex items-center justify-center bg-black cursor-pointer" onclick={togglePlay}>
           <video
             bind:this={secondaryVideoElement}
-            src={clipStore.analysisResult.directVideoUrl}
+            src={activeVideoSource}
             class="absolute inset-0 w-full h-full object-cover filter blur-xl scale-125 opacity-50 pointer-events-none"
             playsinline
             muted={true}
           ></video>
           <video
             bind:this={videoElement}
-            src={clipStore.analysisResult.directVideoUrl}
-            class="relative max-w-full max-h-full object-contain pointer-events-none z-1 shadow-2xl rounded-lg"
+            src={activeVideoSource}
+            class="relative max-w-full max-h-full object-contain z-1 shadow-2xl rounded-lg"
             playsinline
-            muted={false}
+            preload="auto"
+            muted={isMuted}
+            ontimeupdate={handleTimeUpdate}
+            onplay={() => isPlaying = true}
+            onpause={() => isPlaying = false}
+            onwaiting={() => isBuffering = true}
+            onplaying={() => isBuffering = false}
+            onerror={() => hasPlaybackError = 'Gagal memuat video stream'}
           ></video>
         </div>
       {:else}
         <!-- Single Focus with Interactive Camera Pan -->
-        <video
-          bind:this={videoElement}
-          src={clipStore.analysisResult.directVideoUrl}
-          class="w-full h-full object-cover pointer-events-none transition-all duration-150"
-          style="object-position: {clipStore.panOffset * 100}% center;"
-          playsinline
-          muted={false}
-        ></video>
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="w-full h-full relative overflow-hidden flex items-center justify-center bg-black cursor-pointer" onclick={togglePlay}>
+          <video
+            bind:this={videoElement}
+            src={activeVideoSource}
+            class="w-full h-full object-cover transition-all duration-150"
+            style="object-position: {clipStore.panOffset * 100}% center;"
+            playsinline
+            preload="auto"
+            muted={isMuted}
+            ontimeupdate={handleTimeUpdate}
+            onplay={() => isPlaying = true}
+            onpause={() => isPlaying = false}
+            onwaiting={() => isBuffering = true}
+            onplaying={() => isBuffering = false}
+            onerror={() => hasPlaybackError = 'Gagal memuat video stream'}
+          ></video>
+        </div>
+      {/if}
+
+      <!-- Center Floating Play Icon (When Paused) -->
+      {#if !isPlaying}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="absolute inset-0 flex items-center justify-center bg-black/25 backdrop-blur-[1px] z-10 cursor-pointer transition-opacity"
+          onclick={togglePlay}
+        >
+          <div class="w-14 h-14 rounded-full bg-[#fcf1d0] text-[#010736] flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition">
+            <Play size={24} class="fill-[#010736] ml-1" />
+          </div>
+        </div>
+      {/if}
+
+      <!-- Floating Sound / Mute Toggle Button -->
+      <button
+        type="button"
+        onclick={toggleMute}
+        class="absolute top-3 right-3 z-30 p-2 rounded-full bg-black/70 hover:bg-black text-[#fcf1d0] border border-white/20 shadow-lg backdrop-blur-sm transition hover:scale-105 active:scale-95"
+        title={isMuted ? 'Nyalakan Suara (Unmute)' : 'Matikan Suara (Mute)'}
+      >
+        {#if isMuted}
+          <VolumeX size={14} class="text-red-400" />
+        {:else}
+          <Volume2 size={14} class="text-emerald-400" />
+        {/if}
+      </button>
+
+      <!-- Buffering Indicator -->
+      {#if isBuffering}
+        <div class="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+          <div class="p-3 rounded-xl bg-black/80 text-[#fcf1d0] flex items-center gap-2 border border-[#22396f]/40 shadow-xl">
+            <Loader2 size={18} class="animate-spin text-[#fcf1d0]" />
+            <span class="text-xs font-mono">Memuat video...</span>
+          </div>
+        </div>
+      {/if}
+
+      <!-- Playback Error Banner -->
+      {#if hasPlaybackError}
+        <div class="absolute bottom-12 inset-x-4 p-2.5 rounded-xl bg-red-950/90 border border-red-700 text-red-200 text-xs font-mono z-30 flex items-center justify-between shadow-2xl">
+          <div class="flex items-center gap-1.5">
+            <AlertCircle size={15} class="text-red-400 flex-shrink-0" />
+            <span>{hasPlaybackError}</span>
+          </div>
+          <button
+            type="button"
+            onclick={togglePlay}
+            class="px-2.5 py-1 rounded bg-[#fcf1d0] text-black font-bold text-[10px]"
+          >
+            Putar
+          </button>
+        </div>
       {/if}
     {:else if videoId}
       <iframe
         id="preview-iframe"
-        src="https://www.youtube-nocookie.com/embed/{videoId}?start={Math.floor(currentTime)}&autoplay={isPlaying ? 1 : 0}&controls=0&modestbranding=1&rel=0"
+        src="https://www.youtube-nocookie.com/embed/{videoId}?start={Math.floor(clipStart)}&controls=1&modestbranding=1&rel=0"
         title="YouTube Preview"
-        class={iframeClass}
+        class={iframeClass.replace('pointer-events-none', '')}
         style="transform: scale(1.25) translateX({(0.5 - clipStore.panOffset) * 35}%);"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       ></iframe>

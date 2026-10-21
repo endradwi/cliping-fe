@@ -8,6 +8,7 @@ class ClipStudioStore {
   videoUrl = $state<string>('');
   isAnalyzing = $state<boolean>(false);
   analysisResult = $state<VideoAnalysisResult | null>(null);
+  localVideoBlobUrl = $state<string | null>(null);
 
   // Campaign Brief & AI Upload Recommendations
   campaignBrief = $state<string>('');
@@ -251,6 +252,12 @@ class ClipStudioStore {
   }
 
   reset() {
+    if (this.localVideoBlobUrl) {
+      try {
+        URL.revokeObjectURL(this.localVideoBlobUrl);
+      } catch {}
+      this.localVideoBlobUrl = null;
+    }
     this.analysisResult = null;
     this.videoUrl = '';
     this.campaignBrief = '';
